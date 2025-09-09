@@ -1,0 +1,16 @@
+version: '3.9'
+services:
+  dev:
+    image: mcr.microsoft.com/devcontainers/javascript-node:20
+    volumes:
+      - .:/workspaces/zatrust-quickstart:cached
+      - node_modules:/workspaces/zatrust-quickstart/node_modules
+    command: sleep infinity
+    ports:
+      - "3000:3000"
+      - "9323:9323" # playwright inspector
+    environment:
+      - NODE_ENV=development
+    working_dir: /workspaces/zatrust-quickstart
+volumes:
+  node_modules:
