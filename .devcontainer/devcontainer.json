@@ -25,6 +25,6 @@
       ]
     }
   },
-  "postCreateCommand": "npm ci && npx playwright install --with-deps",
+  "postCreateCommand": "npm install && npx playwright install",
   "remoteUser": "node"
 }
