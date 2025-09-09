@@ -8,6 +8,7 @@ A minimal, modular Next.js (TypeScript) starter focused on:
 - Modular structure
 
 Includes:
+
 - Landing page (`/`)
 - Login (`/login`) with simple cookie-based demo auth
 - Dashboard (`/dashboard`) protected by middleware

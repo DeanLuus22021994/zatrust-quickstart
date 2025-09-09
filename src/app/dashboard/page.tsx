@@ -1,8 +1,8 @@
-import { cookies } from 'next/headers';
+import { cookies } from "next/headers";
 
 export default function DashboardPage() {
   const cookieStore = cookies();
-  const user = cookieStore.get('demo_user');
+  const user = cookieStore.get("demo_user");
 
   return (
     <section>
