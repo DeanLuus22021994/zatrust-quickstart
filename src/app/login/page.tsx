@@ -1,10 +1,14 @@
 import LoginForm from "@/components/auth/LoginForm";
 
-export default function LoginPage() {
+type LoginPageProps = {
+  searchParams: { from?: string };
+};
+
+export default function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <section>
       <h1>Login</h1>
-      <LoginForm />
+      <LoginForm from={searchParams.from} />
     </section>
   );
 }

@@ -21,3 +21,7 @@ Thumbs.db
 .vscode/
 .env.local
 .env*
+
+# Temporary files
+cookies.txt
+headers.txt

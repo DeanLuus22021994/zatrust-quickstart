@@ -1,14 +1,30 @@
 "use client";
 
-export default function LoginForm() {
+type LoginFormProps = {
+  from?: string;
+};
+
+export default function LoginForm({ from }: LoginFormProps) {
   return (
     <form action="/api/auth/login" method="post" style={{ maxWidth: 320 }}>
-      <label>
+      {from && <input type="hidden" name="from" value={from} />}
+      <label htmlFor="username">
         Username
-        <input name="username" placeholder="demo" required />
+        <input 
+          id="username"
+          name="username" 
+          placeholder="demo" 
+          required 
+          aria-describedby="username-help"
+        />
       </label>
+      <div id="username-help" style={{ fontSize: 14, color: '#666', marginTop: 4 }}>
+        Enter any username to continue
+      </div>
       <div style={{ marginTop: 12 }}>
-        <button type="submit">Login</button>
+        <button type="submit">
+          Login
+        </button>
       </div>
     </form>
   );
