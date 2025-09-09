@@ -1,20 +1,23 @@
+import type { ReactNode } from 'react';
+import './globals.css';
+
 export const metadata = {
   title: 'Zatrust Quickstart',
   description: 'Modular, testable Next.js starter',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <header style={{ padding: '1rem', borderBottom: '1px solid #eee' }}>
-          <a href="/">Zatrust</a>
-          <nav style={{ marginLeft: '1rem', display: 'inline-block' }}>
-            <a href="/login" style={{ marginRight: '1rem' }}>Login</a>
-            <a href="/dashboard">Dashboard</a>
+        <header className="site-header">
+          <a className="brand" href="/">Zatrust</a>
+          <nav className="site-nav">
+            <a className="nav-link" href="/login">Login</a>
+            <a className="nav-link" href="/dashboard">Dashboard</a>
           </nav>
         </header>
-        <main style={{ padding: '2rem' }}>{children}</main>
+        <main className="site-main">{children}</main>
       </body>
     </html>
   );
