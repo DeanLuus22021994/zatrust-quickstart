@@ -37,7 +37,7 @@
     "GH_RUNNER_LABELS": "self-hosted,devcontainer,linux,x64",
     "ENABLE_GH_RUNNER": "false"
   },
-  "postCreateCommand": "bash -lc 'set -e; echo [postCreate] Ensuring writable node_modules; mkdir -p node_modules; if [ ! -w node_modules ]; then echo [postCreate] Attempting chown; sudo chown -R node:node node_modules || true; fi; echo [postCreate] Installing deps (ci->install fallback); (npm ci || npm install); echo [postCreate] Installing Playwright browsers; npx playwright install --with-deps; if [ \"$ENABLE_GH_RUNNER\" = \"true\" ]; then bash .github/scripts/start-runner.sh; fi; echo [postCreate] Done'",
+  "postCreateCommand": "bash .devcontainer/postCreate.sh",
   "postStartCommand": "bash -lc 'if [ ! -f .next/BUILD_ID ]; then echo [postStart] Starting dev server; npm run dev & else echo [postStart] Reusing existing build; fi'",
   "forwardPorts": [3000, 9323],
   "remoteEnv": {
