@@ -1,63 +1,44 @@
 version: 2
+# Focused on security updates only - Renovate handles regular dependency updates
 updates:
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "04:00"
-      timezone: "UTC"
-    versioning-strategy: increase-if-necessary
-    rebase-strategy: auto
-    commit-message:
-      prefix: "deps"
-      include: "scope"
-    labels:
-      - "dependencies"
-    groups:
-      minor-and-patch:
-        patterns: ["*"]
-        update-types: ["minor", "patch"]
-        automerge: true
-      major-react-next:
-        patterns: ["react", "react-dom", "next"]
-        update-types: ["major"]
-      eslint-stack:
-        patterns: ["eslint", "@typescript-eslint/*", "eslint-config-next"]
-        update-types: ["minor", "patch"]
-        automerge: true
-      playwright-stack:
-        patterns: ["@playwright/test"]
-        update-types: ["minor", "patch"]
-        automerge: true
-      types-packages:
-        patterns: ["@types/*"]
-        update-types: ["minor", "patch"]
-        automerge: true
-    open-pull-requests-limit: 10
-    allow:
-      - dependency-type: "all"
-    ignore:
-      - dependency-name: "next"
-        update-types: ["version-update:semver-patch"]
-
+  # Security-only updates for npm packages
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "daily"
+      time: "06:00"
+      timezone: "UTC"
+    # Only security updates to complement Renovate
     security-updates-only: true
-    automerge: true
+    open-pull-requests-limit: 5
     commit-message:
-      prefix: "deps-sec"
-    labels: ["security", "dependencies"]
-
+      prefix: "fix"
+      prefix-development: "chore"
+      include: "scope"
+    labels:
+      - "security"
+      - "dependencies"
+      - "dependabot"
+    allow:
+      - dependency-type: "all"
+    # Auto-merge security patches
+    automerge: true
+    
+  # GitHub Actions security updates
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "monday"
-      time: "04:30"
+      day: "tuesday"
+      time: "06:00"
       timezone: "UTC"
+    # Only security updates for GitHub Actions
+    security-updates-only: true
     commit-message:
       prefix: "ci"
-    labels: ["ci"]
+      include: "scope"
+    labels:
+      - "security"
+      - "ci"
+      - "dependabot"
+    open-pull-requests-limit: 3

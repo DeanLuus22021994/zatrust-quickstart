@@ -1,20 +1,23 @@
-name: ShellCheck
+name: ShellCheck Analysis
 
 on:
   push:
     paths:
       - ".devcontainer/scripts/**/*.sh"
+      - "scripts/**/*.sh" 
       - ".github/workflows/shellcheck.yml"
   pull_request:
     paths:
       - ".devcontainer/scripts/**/*.sh"
+      - "scripts/**/*.sh"
   schedule:
-    - cron: "0 3 * * 1"
+    - cron: "0 3 * * 1"  # Weekly on Mondays at 3 AM UTC
   workflow_dispatch:
 
 permissions:
   contents: read
   issues: write
+  security-events: write
 
 concurrency:
   group: shellcheck-${{ github.ref }}
@@ -22,49 +25,164 @@ concurrency:
 
 jobs:
   shellcheck:
+    name: Shell Script Analysis
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        sc-version: ["stable"]
+        sc-version: ["v0.10.0"]  # Pin to specific version for consistency
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Install ShellCheck
+      - name: Install ShellCheck ${{ matrix.sc-version }}
         run: |
-          sudo apt-get update
-          sudo apt-get install -y shellcheck
+          # Download specific version for consistency
+          wget -qO- "https://github.com/koalaman/shellcheck/releases/download/${{ matrix.sc-version }}/shellcheck-${{ matrix.sc-version }}.linux.x86_64.tar.xz" | tar -xJ
+          sudo cp "shellcheck-${{ matrix.sc-version }}/shellcheck" /usr/local/bin/
+          sudo chmod +x /usr/local/bin/shellcheck
 
-      - name: Version
-        run: shellcheck --version
+      - name: Verify ShellCheck installation
+        run: |
+          shellcheck --version
+          which shellcheck
 
-      - name: Run ShellCheck
+      - name: Find shell scripts
+        id: find-scripts
+        run: |
+          # Find all shell scripts in the repository
+          scripts=$(find . -name "*.sh" -not -path "./node_modules/*" -not -path "./.git/*" | sort)
+          echo "Found shell scripts:"
+          echo "$scripts"
+          echo "scripts<<EOF" >> $GITHUB_OUTPUT
+          echo "$scripts" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Run ShellCheck analysis
         run: |
           set -e
-          shellcheck -f gcc .devcontainer/scripts/*.sh | tee shellcheck-report.txt || true
-          if grep -E 'error:' shellcheck-report.txt; then
-            echo "Errors detected" >&2
+          
+          # Create output directory
+          mkdir -p shellcheck-results
+          
+          # Run ShellCheck with comprehensive options
+          echo "Running ShellCheck analysis..."
+          
+          # Check if we have any scripts to analyze
+          if [ -z "${{ steps.find-scripts.outputs.scripts }}" ]; then
+            echo "No shell scripts found to analyze"
+            exit 0
+          fi
+          
+          # Run ShellCheck with multiple output formats
+          shellcheck \
+            --format=gcc \
+            --severity=error \
+            --enable=all \
+            --source-path=.devcontainer/scripts \
+            ${{ steps.find-scripts.outputs.scripts }} | tee shellcheck-results/gcc-errors.txt
+          
+          shellcheck \
+            --format=json \
+            --severity=warning \
+            --enable=all \
+            --source-path=.devcontainer/scripts \
+            ${{ steps.find-scripts.outputs.scripts }} > shellcheck-results/results.json || true
+            
+          shellcheck \
+            --format=sarif \
+            --severity=info \
+            --enable=all \
+            --source-path=.devcontainer/scripts \
+            ${{ steps.find-scripts.outputs.scripts }} > shellcheck-results/results.sarif || true
+          
+          # Check for errors and set exit code
+          if grep -E 'error:' shellcheck-results/gcc-errors.txt; then
+            echo "❌ ShellCheck detected errors - see results for details"
             exit 1
+          else
+            echo "✅ No ShellCheck errors found"
           fi
 
-      - name: Upload report
+      - name: Upload SARIF results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: shellcheck-results/results.sarif
+          category: shellcheck
+          
+      - name: Upload detailed results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: shellcheck-report
-          path: shellcheck-report.txt
-          retention-days: 7
+          name: shellcheck-analysis-${{ matrix.sc-version }}-${{ github.run_id }}
+          path: shellcheck-results/
+          retention-days: 14
+
+      - name: Create summary report
+        if: always()
+        run: |
+          echo "## 🐚 ShellCheck Analysis Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ matrix.sc-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Scripts analyzed:** $(echo '${{ steps.find-scripts.outputs.scripts }}' | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f shellcheck-results/gcc-errors.txt ] && [ -s shellcheck-results/gcc-errors.txt ]; then
+            echo "### Issues Found" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            head -20 shellcheck-results/gcc-errors.txt >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ✅ No Issues Found" >> $GITHUB_STEP_SUMMARY
+            echo "All shell scripts passed ShellCheck analysis!" >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Create issue on failure
         if: failure() && github.event_name != 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
-            const title = 'ShellCheck Failure';
-            const body = 'Automated issue due to ShellCheck failure. See shellcheck-report artifact. Remediation: .github/prompts/automation.prompt.yml';
-            const { data: issues } = await github.rest.issues.listForRepo({ ...context.repo, state:'open', labels:'shellcheck-failure' });
-            if (!issues.find(i=>i.title===title)) {
-              await github.rest.issues.create({ ...context.repo, title, body, labels:['shellcheck-failure','automation']});
+            const title = 'Shell Script Quality Issues - ShellCheck Findings';
+            const body = [
+              '🐚 **ShellCheck Analysis detected issues in shell scripts**',
+              '',
+              `- **Workflow Run**: [${context.runNumber}](${context.payload.repository.html_url}/actions/runs/${context.runId})`,
+              `- **Branch**: ${context.ref}`,
+              `- **ShellCheck Version**: ${{ matrix.sc-version }}`,
+              '',
+              '**Next Steps:**',
+              '1. Download the shellcheck-analysis artifact for detailed results',
+              '2. Review SARIF findings in the Security tab',
+              '3. Fix high-priority errors and warnings',
+              '4. Test script changes in development environment',
+              '5. Re-run analysis to validate fixes',
+              '',
+              '**Common Fixes:**',
+              '- Add proper quoting for variables: `"$variable"`',
+              '- Use `[[ ]]` instead of `[ ]` for tests',
+              '- Add `set -euo pipefail` for safer scripts',
+              '- Use proper exit codes and error handling',
+              '',
+              '**References:**',
+              '- [ShellCheck Wiki](https://www.shellcheck.net/wiki/)',
+              '- Remediation guide: `.github/prompts/automation.prompt.yml`'
+            ].join('\n');
+            
+            const { data: issues } = await github.rest.issues.listForRepo({
+              ...context.repo,
+              state: 'open',
+              labels: 'shellcheck-failure'
+            });
+            
+            if (!issues.find(i => i.title === title)) {
+              await github.rest.issues.create({
+                ...context.repo,
+                title,
+                body,
+                labels: ['shellcheck-failure', 'automation', 'quality']
+              });
             }

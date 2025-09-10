@@ -59,20 +59,21 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .next/cache
-          key: next-cache-${{ runner.os }}-${{ matrix.node }}-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-nextjs-${{ matrix.node }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
           restore-keys: |
-            next-cache-${{ runner.os }}-${{ matrix.node }}-
+            ${{ runner.os }}-nextjs-${{ matrix.node }}-${{ hashFiles('**/package-lock.json') }}-
+            ${{ runner.os }}-nextjs-${{ matrix.node }}-
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: pw-${{ runner.os }}-${{ matrix.node }}-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-playwright-${{ matrix.node }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-            pw-${{ runner.os }}-${{ matrix.node }}-
+            ${{ runner.os }}-playwright-${{ matrix.node }}-
 
       - name: Install dependencies (ci)
-        run: npm ci
+        run: npm ci --no-audit --no-fund
 
       - name: Doctor
         run: npm run doctor
@@ -87,34 +88,65 @@ jobs:
         run: npm run build
 
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
+        run: npx playwright install --with-deps chromium
 
       - name: E2E Tests
-        run: npm run test:e2e -- --reporter=line --timeout=45000
+        run: npm run test:e2e -- --reporter=line,github --timeout=45000
+        env:
+          CI: true
+          PLAYWRIGHT_JUNIT_OUTPUT_NAME: test-results/results.xml
 
       - name: Upload Playwright report
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report-${{ matrix.node }}
-          path: playwright-report
+          name: playwright-report-${{ matrix.node }}-${{ github.run_id }}
+          path: playwright-report/
           if-no-files-found: ignore
-          retention-days: 5
+          retention-days: 7
 
       - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.node }}-${{ github.run_id }}
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Bundle analysis and performance profiling
+        run: |
+          npm run analyze 2>&1 | tee bundle-analysis.txt || true
+          npx next build --profile 2>&1 | tee build-profile.txt || true
+
+      - name: Upload bundle analysis
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.node }}
-          path: test-results
+          name: bundle-analysis-${{ matrix.node }}-${{ github.run_id }}
+          path: |
+            bundle-analysis.txt
+            build-profile.txt
+            .next/analyze/
           if-no-files-found: ignore
-          retention-days: 5
+          retention-days: 7
 
-      - name: Bundle profiling (non-fatal)
-        run: npx next build --profile || true
+      - name: Security audit (high+ vulnerabilities)
+        run: |
+          npm audit --audit-level=high --json > security-audit.json || true
+          if [ -s security-audit.json ]; then
+            echo "Security vulnerabilities found:"
+            cat security-audit.json
+          fi
 
-      - name: Audit (high+ fail visibility only)
-        run: npm audit --audit-level=high || true
+      - name: Upload security audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit-${{ matrix.node }}-${{ github.run_id }}
+          path: security-audit.json
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Create issue on failure
         if: failure() && github.event_name == 'push'
