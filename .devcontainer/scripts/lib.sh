@@ -71,7 +71,9 @@ load_runner_pat() {
     .github_runner_pat \
     .devcontainer/github_runner_pat; do
     if [ -f "$f" ]; then
-      export GITHUB_PERSONAL_ACCESS_TOKEN="$(tr -d '\r' <"$f" | head -n1)"
+      local pat_content
+      pat_content="$(tr -d '\r' <"$f" | head -n1)"
+      export GITHUB_PERSONAL_ACCESS_TOKEN="$pat_content"
       log "Loaded runner PAT from $f"
       break
     fi
@@ -106,9 +108,13 @@ install_node_dependencies() {
     chmod a+r node_modules/typescript/lib/tsserver.js || true
   fi
   # Ownership fix (rare case where previous root install left root-owned tree)
-  if [ -d node_modules/typescript ] && [ "$(stat -c %u node_modules/typescript 2>/dev/null || echo 0)" -eq 0 ]; then
-    log "Adjusting ownership of typescript package to current user"
-    chown -R "$(id -u)":"$(id -g)" node_modules/typescript || true
+  if [ -d node_modules/typescript ]; then
+    local owner_uid
+    owner_uid="$(stat -c %u node_modules/typescript 2>/dev/null || echo 0)"
+    if [ "$owner_uid" -eq 0 ]; then
+      log "Adjusting ownership of typescript package to current user"
+      chown -R "$(id -u)":"$(id -g)" node_modules/typescript || true
+    fi
   fi
   # Final validation
   if ! node -e 'require("fs").accessSync("node_modules/typescript/lib/tsserver.js")' 2>/dev/null; then
