@@ -11,30 +11,53 @@
   "timezone": "UTC",
   "schedule": ["before 5am on monday"],
   "rangeStrategy": "bump",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 5am on monday"],
+    "automerge": true
+  },
   "packageRules": [
     {
       "matchPackagePatterns": ["^react$", "^react-dom$", "^next$"],
       "groupName": "react-next-major",
       "matchUpdateTypes": ["major"],
-      "stabilityDays": 3
+      "stabilityDays": 3,
+      "prCreation": "not-pending",
+      "dependencyDashboardApproval": true
     },
     {
+      "matchPackagePatterns": [
+        "^eslint$",
+        "^eslint-config-next$",
+        "^@typescript-eslint/"
+      ],
+      "groupName": "eslint-stack",
       "matchUpdateTypes": ["minor", "patch"],
-      "automerge": true,
-      "automergeType": "pr",
-      "platformAutomerge": true
+      "automerge": true
+    },
+    {
+      "matchPackagePatterns": ["^@playwright/test$"],
+      "groupName": "playwright-stack",
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
     },
     {
       "matchDepTypes": ["devDependencies"],
       "groupName": "dev-deps-minor-patch",
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true
+    },
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
     }
   ],
   "prConcurrentLimit": 10,
   "prHourlyLimit": 5,
   "labels": ["dependencies"],
-  "semanticCommits": true,
+  "semanticCommits": "enabled",
   "ignorePaths": ["**/test-results/**"],
   "rollbackPrs": true,
   "rollbackPrsLimit": 3
