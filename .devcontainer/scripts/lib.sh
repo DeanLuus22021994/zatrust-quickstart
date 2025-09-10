@@ -1,8 +1,27 @@
 #!/usr/bin/env bash
-# Common library for devcontainer automation scripts (SRP-focused functions)
+###############################################################################
+# Dev Container Provisioning Library
+#
+# Responsibilities (SRP): Provide reusable, idempotent helper functions consumed
+# by thin orchestration scripts (provision.sh, start-runner.sh).
+#
+# Principles: DRY (shared logic centralized), SRP (each function clear purpose),
+# small composable units.
+###############################################################################
 set -euo pipefail
 
-log() { printf '[devcontainer] %s\n' "$*"; }
+LOG_PREFIX="[devcontainer]"
+log() { printf '%s %s\n' "$LOG_PREFIX" "$*"; }
+
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || { log "Missing required command: $1" >&2; exit 1; }
+}
+
+check_requirements() {
+  for c in git npm curl tar sha256sum; do
+    require_cmd "$c"
+  done
+}
 
 # ---------- Git Configuration ----------
 
@@ -47,6 +66,10 @@ install_node_dependencies() {
 }
 
 install_playwright() {
+  if [ ! -d tests ]; then
+    log "No tests/ directory -> skipping Playwright install"
+    return 0
+  fi
   local cache_dir="/home/node/.cache/ms-playwright"
   if [ ! -d "$cache_dir" ]; then
     log "Installing Playwright browsers (chromium)"
@@ -70,6 +93,7 @@ start_github_runner() {
 }
 
 provision_all() {
+  check_requirements
   ensure_git_identity
   configure_git_safe_directory
   install_node_dependencies
