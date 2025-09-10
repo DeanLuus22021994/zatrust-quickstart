@@ -16,22 +16,23 @@
     "health": "node -e \"require('http').get('http://localhost:${PORT||3000}', r=>{console.log(r.statusCode===200?'ok':'down');})\"",
     "deps:outdated": "npm outdated",
     "deps:update:minor": "npx npm-check-updates --target minor -u && npm install",
+    "deps:update:all": "npx npm-check-updates -u && npm install",
     "quality:all": "npm run lint && npm run typecheck && npm run test:e2e"
   },
   "dependencies": {
-    "next": "^14.2.5",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "next": "^15.5.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
   },
   "devDependencies": {
-    "@playwright/test": "^1.46.0",
-    "@types/node": "^20.14.9",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "eslint": "^8.57.0",
-    "eslint-config-next": "^14.2.5",
+    "@playwright/test": "^1.48.2",
+    "@types/node": "^24.3.1",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "eslint": "^9.35.0",
+    "eslint-config-next": "^15.5.2",
     "prettier": "^3.3.3",
-    "typescript": "^5.5.3",
-    "npm-check-updates": "^17.0.0"
+    "typescript": "^5.6.2",
+    "npm-check-updates": "^18.1.0"
   }
 }

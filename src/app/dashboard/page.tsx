@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 
-export default function DashboardPage() {
-  const cookieStore = cookies();
+export default async function DashboardPage() {
+  const cookieStore = await cookies();
   const user = cookieStore.get("demo_user");
 
   return (

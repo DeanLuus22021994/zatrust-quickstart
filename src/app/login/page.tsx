@@ -1,14 +1,15 @@
 import LoginForm from "@/components/auth/LoginForm";
 
 type LoginPageProps = {
-  searchParams: { from?: string };
+  searchParams: Promise<{ from?: string }>;
 };
 
-export default function LoginPage({ searchParams }: LoginPageProps) {
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
   return (
     <section>
       <h1>Login</h1>
-      <LoginForm from={searchParams.from} />
+      <LoginForm from={params.from} />
     </section>
   );
 }

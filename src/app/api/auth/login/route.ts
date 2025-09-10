@@ -6,7 +6,8 @@ export async function POST(request: Request) {
   const username = String(formData.get("username") || "guest");
   const from = String(formData.get("from") || "/dashboard");
 
-  cookies().set("demo_user", username, {
+  const cookieStore = await cookies();
+  cookieStore.set("demo_user", username, {
     httpOnly: true, // Improved security: prevent client-side access
     path: "/",
     sameSite: "lax",
