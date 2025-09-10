@@ -14,7 +14,7 @@ workflows:
           - npm run quality:all
         notes:
           - Ensure both Node LTS and current matrix pass.
-          - Investigate first failing job, not cascade errors.
+          - Investigate first failing job first (avoid chasing cascade errors).
     - name: ShellCheck
       label: shellcheck-failure
       remediation:
@@ -23,6 +23,7 @@ workflows:
           - shellcheck .devcontainer/scripts/*.sh
         notes:
           - Address highest severity (error) findings first.
+          - Fix root cause before style nits.
     - name: CodeQL
       label: codeql-failure
       remediation:
@@ -31,6 +32,7 @@ workflows:
           - npm run build
         notes:
           - Review SARIF alerts in Security tab.
+          - Confirm no sensitive data leaks / new sinks introduced.
 
 issues:
   create:

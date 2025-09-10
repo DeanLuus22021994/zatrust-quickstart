@@ -10,7 +10,7 @@ coding:
   preferServerComponents: true
   prohibitGlobalState: true
   enforceSanitizedRedirects: true
-  testCoverageMinimum: 1  # Placeholder (no coverage tooling yet) ensures presence if added later
+  testCoverageMinimum: 1  # Placeholder until coverage tooling added
 
 dependencies:
   autoMergeMinorPatch: true

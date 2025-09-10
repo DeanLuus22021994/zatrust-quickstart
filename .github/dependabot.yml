@@ -24,10 +24,16 @@ updates:
         update-types: ["major"]
       eslint-stack:
         patterns: ["eslint", "@typescript-eslint/*", "eslint-config-next"]
+        update-types: ["minor", "patch"]
+        automerge: true
       playwright-stack:
         patterns: ["@playwright/test"]
+        update-types: ["minor", "patch"]
+        automerge: true
       types-packages:
         patterns: ["@types/*"]
+        update-types: ["minor", "patch"]
+        automerge: true
     open-pull-requests-limit: 10
     allow:
       - dependency-type: "all"

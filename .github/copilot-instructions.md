@@ -72,7 +72,22 @@ src/
 
 - Sanitize redirect sources (only relative internal paths).
 - Keep dependencies updated (automation already configured).
-- Run `npm run quality:all` locally before pushing significant changes.
+- Run `npm run quality:all` before pushing significant changes.
+- Principle of Least Privilege in workflows; avoid broad write perms unless needed.
+
+## Remediation Quick Checklist
+1. Reproduce locally (`npm run quality:all`).
+2. Fix minimal root cause.
+3. Add/adjust tests if behavior changes.
+4. Re-run quality script until green.
+5. Commit with conventional prefix.
+6. Reference issue in PR.
+
+## Reference Prompts
+- Automation: `.github/instructions/automation.prompt.yml`
+- Maintenance: `.github/instructions/maintenance.prompt.yml`
+- Policies: `.github/instructions/policies.prompt.yml`
+- Context: `.github/instructions/context.prompt.yml`
 
 ## Copilot Maintenance Guidance
 

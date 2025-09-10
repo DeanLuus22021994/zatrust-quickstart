@@ -22,6 +22,8 @@ validation:
     - npm run lint
     - npm run typecheck
     - npm run test:e2e
+  notes:
+    - All required scripts must pass before auto-merge or manual approval.
 
 pr:
   bodyTemplate: |

@@ -7,6 +7,7 @@ on:
     branches: [main]
   schedule:
     - cron: "0 2 * * 1"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -33,15 +34,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      # If the project later needs a build for CodeQL, uncomment below:
+      # Uncomment if build analysis required in future:
       # - name: Setup Node
       #   uses: actions/setup-node@v4
       #   with:
       #     node-version: 20.x
       #     cache: npm
-      # - name: Install dependencies
+      # - name: Install deps
       #   run: npm ci
+      # - name: Build
+      #   run: npm run build
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3

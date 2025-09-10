@@ -3,12 +3,15 @@ name: Auto-merge Dependencies
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, ready_for_review]
+  workflow_dispatch:
 
+# Least privilege at top-level; job will further restrict if needed.
 permissions:
-  contents: write
-  pull-requests: write
+  contents: write # needed for auto-merge & branch updates
+  pull-requests: write # finalize merges / enable auto-merge
   checks: read
-  issues: write # allow commenting on PRs reliably
+  issues: write # comment on PR (issue API)
+  # security-events not needed
 
 concurrency:
   group: automerge-${{ github.event.pull_request.number || github.run_id }}
@@ -18,18 +21,24 @@ jobs:
   automerge:
     name: Auto-merge dependency PR
     if: >-
+      github.event_name == 'pull_request' &&
       !github.event.pull_request.draft &&
+      github.event.pull_request.base.ref == 'main' &&
       (contains(github.event.pull_request.labels.*.name, 'dependencies') ||
        contains(github.event.pull_request.labels.*.name, 'renovate')) &&
-      (github.event.pull_request.user.login == 'dependabot[bot]' || github.event.pull_request.user.login == 'renovate[bot]')
+      (github.event.pull_request.user.login == 'dependabot[bot]' ||
+       github.event.pull_request.user.login == 'renovate[bot]')
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - name: Ensure PR is up to date
+      - name: Log metadata
         uses: actions/github-script@v7
         with:
           script: |
-            // Optionally re-run if merge conflicts exist; placeholder for future logic
-            core.info('Pre-merge validation step executed.')
+            const pr = context.payload.pull_request;
+            core.info(`Evaluating dependency PR #${pr.number}`);
+            core.info(`From: ${pr.user.login}  Head: ${pr.head.ref}  Base:${pr.base.ref}`);
+            core.info(`Labels: ${(pr.labels||[]).map(l=>l.name).join(', ')}`);
       - name: Auto-merge minor/patch dependency PRs
         uses: fastify/github-action-merge-dependabot@v3
         with:
@@ -44,13 +53,13 @@ jobs:
         with:
           script: |
             const pr = context.payload.pull_request;
-            core.info(`Evaluated auto-merge for #${pr.number}`);
+            core.info(`Auto-merge evaluation complete for #${pr.number}`);
             if (!pr.merged) {
               const existing = await github.rest.issues.listComments({
                 ...context.repo,
                 issue_number: pr.number
               });
-              if (!existing.data.find(c => c.body && c.body.includes('Auto-merge workflow evaluated.'))) {
+              if (!existing.data.find(c => c.body?.includes('Auto-merge workflow evaluated.'))) {
                 await github.rest.issues.createComment({
                   ...context.repo,
                   issue_number: pr.number,

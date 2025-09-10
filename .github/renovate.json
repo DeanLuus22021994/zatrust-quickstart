@@ -5,6 +5,7 @@
     ":dependencyDashboard",
     ":semanticCommits",
     ":separateMultipleMajorReleases",
+    ":enableVulnerabilityAlerts",
     "group:monorepos",
     "group:test"
   ],
@@ -17,6 +18,7 @@
     "automerge": true,
     "automergeType": "pr"
   },
+  "branchConcurrentLimit": 10,
   "packageRules": [
     {
       "matchPackagePatterns": ["^react$", "^react-dom$", "^next$"],
@@ -28,11 +30,7 @@
       "automerge": false
     },
     {
-      "matchPackagePatterns": [
-        "^eslint$",
-        "^eslint-config-next$",
-        "^@typescript-eslint/"
-      ],
+      "matchPackagePatterns": ["^eslint$", "^eslint-config-next$", "^@typescript-eslint/"],
       "groupName": "eslint-stack",
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true

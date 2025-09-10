@@ -7,24 +7,26 @@ on:
     branches: [main]
   schedule:
     - cron: "0 3 * * *" # nightly audit window (UTC)
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Baseline minimal; jobs override if they need write
 permissions:
   contents: read
-  actions: read
   checks: write
   pull-requests: write
   security-events: write
   issues: write
+  actions: read
 
 jobs:
   quality:
     name: Quality (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
@@ -32,22 +34,28 @@ jobs:
     env:
       NEXT_TELEMETRY_DISABLED: 1
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+      CI: "true"
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Use Node.js ${{ matrix.node }}
+      - name: Setup Node ${{ matrix.node }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: "npm"
+          cache: npm
 
       - name: Display dependency versions
         run: node -v && npm -v
 
-      - name: Restore Next.js cache
+      - name: Cache Next.js
         uses: actions/cache@v4
         with:
           path: .next/cache
@@ -55,10 +63,18 @@ jobs:
           restore-keys: |
             next-cache-${{ runner.os }}-${{ matrix.node }}-
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ matrix.node }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            pw-${{ runner.os }}-${{ matrix.node }}-
+
       - name: Install dependencies (ci)
         run: npm ci
 
-      - name: Doctor (sanity deps)
+      - name: Doctor
         run: npm run doctor
 
       - name: Type check
@@ -75,60 +91,55 @@ jobs:
 
       - name: E2E Tests
         run: npm run test:e2e -- --reporter=line --timeout=45000
-        env:
-          CI: "true"
 
-      - name: Upload Playwright report (always)
+      - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-${{ matrix.node }}
           path: playwright-report
           if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 5
 
-      - name: Upload test results (always)
+      - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.node }}
           path: test-results
           if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 5
 
-      - name: Generate bundle analysis (build stats)
+      - name: Bundle profiling (non-fatal)
         run: npx next build --profile || true
 
-      - name: Audit (high+ fail)
+      - name: Audit (high+ fail visibility only)
         run: npm audit --audit-level=high || true
 
-      - name: Create issue on failure (auto-managed)
-        if: failure() && github.event_name != 'pull_request'
+      - name: Create issue on failure
+        if: failure() && github.event_name == 'push'
         uses: actions/github-script@v7
         with:
           script: |
-            const title = `CI Failure on ${process.env.GITHUB_REF}`;
+            const ref = process.env.GITHUB_REF;
+            const title = `CI Failure on ${ref}`;
             const body = [
               'Automated issue created due to CI failure.',
-              'Workflow: CI',
-              `Ref: ${process.env.GITHUB_REF}`,
-              'Please investigate failing job logs.',
-              '',
-              'Copilot: see .github/instructions/automation.prompt.yml for remediation steps.'
-            ].join('\n');
-            const { data: issues } = await github.rest.issues.listForRepo({ ...context.repo, state: 'open', labels: 'ci-failure' });
-            if (!issues.find(i => i.title === title)) {
-              await github.rest.issues.create({
-                ...context.repo,
-                title,
-                body,
-                labels: ['ci-failure','automation']
-              });
+              `Ref: ${ref}`,
+              'Investigate first failing job; ignore cascade errors.',
+              'See .github/instructions/automation.prompt.yml for remediation.'
+            ].join('\\n');
+            const { data: issues } = await github.rest.issues.listForRepo({ ...context.repo, state:'open', labels:'ci-failure' });
+            if (!issues.find(i=>i.title===title)) {
+              await github.rest.issues.create({ ...context.repo, title, body, labels:['ci-failure','automation']});
             }
 
   dependency-review:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -142,10 +153,14 @@ jobs:
   nightly-audit:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Use Node.js 20.x
+      - name: Setup Node 20.x
         uses: actions/setup-node@v4
         with:
           node-version: 20.x
@@ -156,7 +171,7 @@ jobs:
         run: npm audit --audit-level=moderate || true
       - name: Outdated summary
         run: npm outdated || true
-      - name: Upload lockfile for inspection
+      - name: Upload lockfile
         uses: actions/upload-artifact@v4
         with:
           name: lockfile-nightly
@@ -168,4 +183,5 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - run: echo "Quality matrix completed."
+      - name: Matrix completion
+        run: echo "Quality matrix completed."
