@@ -56,23 +56,26 @@ configure_git_safe_directory() {
   fi
 }
 
-ensure_workspace_symlink() {
-  # Some language tools (VS Code remote) refer to /zatrust-quickstart even though
-  # the project is mounted at /workspaces/zatrust-quickstart. Provide a stable
-  # symlink to avoid path resolution issues (e.g., tsserver path mismatch warnings).
-  if [ ! -e /zatrust-quickstart ]; then
-    ln -s /workspaces/zatrust-quickstart /zatrust-quickstart || true
-    log "Created symlink /zatrust-quickstart -> /workspaces/zatrust-quickstart"
-  else
-    # Ensure it points correctly
-    if [ "$(readlink /zatrust-quickstart || true)" != "/workspaces/zatrust-quickstart" ]; then
-      rm -f /zatrust-quickstart
-      ln -s /workspaces/zatrust-quickstart /zatrust-quickstart || true
-      log "Recreated corrected symlink /zatrust-quickstart"
-    else
-      log "Workspace symlink present"
-    fi
+# Removed symlink creation attempt to /zatrust-quickstart because the non-root
+# user cannot write to /. This also proved unnecessary for tsserver resolution.
+# If a future need arises, implement an opt-in via an env flag and writable path.
+
+load_runner_pat() {
+  # Allow supplying PAT via file (avoids embedding secrets in devcontainer.json).
+  if [ -n "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]; then
+    return 0
   fi
+  for f in \
+    .devcontainer/secrets/github_runner_pat \
+    .devcontainer/secrets/pat \
+    .github_runner_pat \
+    .devcontainer/github_runner_pat; do
+    if [ -f "$f" ]; then
+      export GITHUB_PERSONAL_ACCESS_TOKEN="$(tr -d '\r' <"$f" | head -n1)"
+      log "Loaded runner PAT from $f"
+      break
+    fi
+  done
 }
 
 install_node_dependencies() {
@@ -136,6 +139,7 @@ start_github_runner() {
     log "GitHub runner disabled (ENABLE_GH_RUNNER=false)"
     return 0
   fi
+  load_runner_pat
   if [ -z "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]; then
     log "Runner enabled but GITHUB_PERSONAL_ACCESS_TOKEN unset -> skipping"
     return 0
@@ -148,7 +152,6 @@ provision_all() {
   check_requirements
   ensure_git_identity
   configure_git_safe_directory
-  ensure_workspace_symlink
   install_node_dependencies
   install_playwright
   start_github_runner

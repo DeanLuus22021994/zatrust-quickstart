@@ -44,7 +44,8 @@
   "containerEnv": {
     "GITHUB_REPOSITORY": "DeanLuus22021994/zatrust-quickstart",
     "GH_RUNNER_LABELS": "self-hosted,devcontainer,linux,x64",
-    "ENABLE_GH_RUNNER": "true"
+    "ENABLE_GH_RUNNER": "true",
+    "GITHUB_RUNNER_VERSION": "latest"
   },
   "postCreateCommand": "bash .devcontainer/scripts/provision.sh",
   "postStartCommand": "bash -lc 'if [ ! -f .next/BUILD_ID ]; then echo [postStart] Starting dev server; npm run dev >/tmp/dev.log 2>&1 & else echo [postStart] Reusing existing build; fi'",

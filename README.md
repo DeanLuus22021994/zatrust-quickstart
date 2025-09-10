@@ -92,6 +92,16 @@ npm run provision
 
 This is safe to run repeatedly (idempotent operations).
 
+### Self-hosted runner PAT
+
+Instead of setting GITHUB_PERSONAL_ACCESS_TOKEN as an env var, you can place it (first line only) in one of:
+
+- .devcontainer/secrets/github_runner_pat
+- .devcontainer/secrets/pat
+- .github_runner_pat
+
+The provisioning script auto-loads it. Avoid committing secret files.
+
 ## Troubleshooting
 
 ### VS Code shows: The path .../node_modules/typescript/lib/tsserver.js doesn't point to a valid tsserver
@@ -122,6 +132,10 @@ npm run provision
 rm -rf node_modules/.cache/typescript 2>/dev/null || true
 Reload VS Code window
 ```
+
+### Removed root symlink workaround
+
+The earlier attempt to create /zatrust-quickstart symlink was removed (permission issues). Not required for TypeScript resolution.
 
 ### JS/TS Language Service crashes
 
