@@ -82,6 +82,12 @@ jobs:
           path: test-results
           if-no-files-found: ignore
 
+      - name: Generate bundle analysis (build stats)
+        run: npx next build --profile || true
+
+      - name: Audit (high+ fail)
+        run: npm audit --audit-level=high || true
+
   dependency-review:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest

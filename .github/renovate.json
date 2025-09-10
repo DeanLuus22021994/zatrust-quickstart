@@ -14,7 +14,8 @@
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": ["before 5am on monday"],
-    "automerge": true
+    "automerge": true,
+    "automergeType": "pr"
   },
   "packageRules": [
     {
@@ -39,7 +40,8 @@
       "matchPackagePatterns": ["^@playwright/test$"],
       "groupName": "playwright-stack",
       "matchUpdateTypes": ["minor", "patch"],
-      "automerge": true
+      "automerge": true,
+      "stabilityDays": 1
     },
     {
       "matchDepTypes": ["devDependencies"],
@@ -56,7 +58,7 @@
   ],
   "prConcurrentLimit": 10,
   "prHourlyLimit": 5,
-  "labels": ["dependencies"],
+  "labels": ["dependencies", "renovate"],
   "semanticCommits": "enabled",
   "ignorePaths": ["**/test-results/**"],
   "rollbackPrs": true,
