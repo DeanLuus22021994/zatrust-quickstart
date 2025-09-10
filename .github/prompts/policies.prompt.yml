@@ -1,32 +1,240 @@
 # Policy & Standards Prompt
-# Purpose: Centralize coding, dependency and security policies.
-# SRP: Only enforceable policy declarations.
+# Purpose: Comprehensive coding, security, and operational policies for consistent quality
+# SRP: Enforceable policy declarations and standards across all aspects of the project
 
-version: 1
+version: 2
 kind: policy
+scope: project-standards
 
+# Enhanced coding standards and practices
 coding:
-  strictTypes: true
-  preferServerComponents: true
-  prohibitGlobalState: true
-  enforceSanitizedRedirects: true
-  testCoverageMinimum: 1  # Placeholder until coverage tooling added
-
+  typescript:
+    strictMode: true
+    noImplicitAny: true
+    noImplicitReturns: true
+    noUnusedLocals: true
+    noUnusedParameters: true
+    exactOptionalPropertyTypes: true
+    
+  react:
+    preferServerComponents: true
+    clientBoundariesMinimal: true
+    noGlobalState: true
+    propsInterfacesRequired: true
+    accessibilityRequired: true
+    
+  architecture:
+    principles: ["DRY", "SOLID", "SRP", "Composition over inheritance"]
+    patterns:
+      - "Server Components by default"
+      - "Props drilling avoided via composition"
+      - "Type-safe APIs with strict interfaces"
+      - "Error boundaries for fallback UI"
+      
+  security:
+    inputSanitization: "All user inputs must be sanitized"
+    redirectValidation: "Only relative internal paths allowed"
+    secretManagement: "No secrets in source code"
+    dependencyScanning: "All dependencies scanned for vulnerabilities"
+    
+  performance:
+    bundleSize: "Initial bundle <500KB gzipped"
+    codesplitting: "Dynamic imports for large dependencies"
+    imageOptimization: "Next.js Image component required"
+    lazyLoading: "Components lazy loaded where beneficial"
+    
+  testing:
+    coverage:
+      e2e: "Critical user journeys covered"
+      unit: "Utility functions tested (future)"
+      integration: "API endpoints tested (future)"
+      
+    accessibility:
+      wcag: "WCAG 2.1 AA compliance target"
+      testing: "Playwright accessibility checks enabled"
+      semanticHtml: "Semantic HTML structure required"
+      
+  documentation:
+    inline: "Complex logic documented with TSDoc"
+    readme: "Setup and troubleshooting documented"
+    api: "API endpoints documented with OpenAPI (future)"
+    
+# Dependency management policies
 dependencies:
-  autoMergeMinorPatch: true
-  requireReviewForMajor: true
-  lockfileMaintenanceWeekly: true
-
+  management:
+    primaryTool: "Renovate"
+    securityTool: "Dependabot (security-only)"
+    
+  updates:
+    autoMergeMinorPatch: true
+    requireReviewForMajor: true
+    securityUpdatesImmediate: true
+    stabilityDays: 1
+    
+  constraints:
+    maxDependencies: 50  # Keep dependencies minimal
+    licenseCompliance: "MIT, Apache-2.0, BSD allowed"
+    securityScanning: "All dependencies scanned"
+    
+  lockfile:
+    maintenanceSchedule: "Weekly on Mondays"
+    autoMerge: true
+    recreation: "When package-lock.json conflicts occur"
+    
+  vulnerability:
+    criticalResponse: "Within 4 hours"
+    highResponse: "Within 24 hours"
+    moderateResponse: "Next scheduled update cycle"
+    
+# Security policies and compliance
 security:
-  codeScanning: codeql
-  dependencyScanning: npm-audit
-  secretLeakPrevention: true
-
+  scanning:
+    tools: ["CodeQL", "npm audit", "ShellCheck", "SARIF upload"]
+    frequency: "Every push + weekly scheduled"
+    reporting: "SARIF format uploaded to Security tab"
+    
+  vulnerabilities:
+    blocking: "High and Critical vulnerabilities block deployment"
+    response: "Automated fix PRs for patchable vulnerabilities"
+    tracking: "All findings tracked in Security tab"
+    
+  secrets:
+    prevention: "GitHub secret scanning enabled"
+    storage: "Use GitHub Secrets for sensitive data"
+    rotation: "Regular secret rotation policy"
+    
+  dependencies:
+    scanning: "All dependencies scanned for known vulnerabilities"
+    policy: "No packages with known high/critical vulnerabilities"
+    updates: "Security updates applied within SLA timeframes"
+    
+  headers:
+    csp: "Content Security Policy (future implementation)"
+    hsts: "HTTP Strict Transport Security (future)"
+    cors: "Proper CORS configuration"
+    
+# Code review and quality standards
 review:
-  conventionalCommits: true
-  smallFocusedPRs: true
-  requirePassingCI: true
-
+  requirements:
+    conventionalCommits: true
+    smallFocusedPRs: true
+    requirePassingCI: true
+    noDirectMainPush: true
+    
+  automation:
+    dependencyPRs: "Auto-merge for minor/patch with passing CI"
+    securityPRs: "Auto-merge for security patches"
+    majorUpdates: "Manual review required"
+    
+  checklist:
+    functionality: "Feature works as intended"
+    testing: "Adequate test coverage for changes"
+    security: "No security vulnerabilities introduced"
+    performance: "No significant performance regressions"
+    accessibility: "Accessibility standards maintained"
+    documentation: "Documentation updated if needed"
+    
+# Release and deployment policies
 release:
-  taggingStrategy: semver
-  changelog: automatedFuture
+  strategy:
+    tagging: "Semantic versioning (semver)"
+    branching: "GitHub Flow (feature branches to main)"
+    deployment: "Continuous deployment from main"
+    
+  validation:
+    preRelease: "All CI checks must pass"
+    postDeployment: "Smoke tests executed"
+    rollback: "Automated rollback on critical failures"
+    
+  changelog:
+    automation: "Generated from conventional commits"
+    format: "Keep a Changelog format"
+    distribution: "GitHub Releases"
+    
+# Monitoring and observability
+monitoring:
+  performance:
+    metrics: ["Bundle size", "Build time", "Test duration"]
+    thresholds: 
+      bundleIncrease: "10%"
+      buildTimeIncrease: "20%"
+      testTimeout: "45 seconds"
+      
+  quality:
+    coverage: "E2E test coverage tracking"
+    linting: "Zero ESLint warnings tolerance"
+    typing: "100% TypeScript coverage"
+    
+  security:
+    vulnerabilities: "Continuous monitoring"
+    dependencies: "Weekly security scans"
+    compliance: "Policy compliance tracking"
+    
+# Operational procedures
+operations:
+  incident:
+    response: "Immediate investigation for critical issues"
+    communication: "GitHub Issues for tracking"
+    postMortem: "Root cause analysis required"
+    
+  maintenance:
+    schedule: "Weekly dependency updates"
+    windows: "Avoid Friday deployments"
+    notification: "Advance notice for major changes"
+    
+  backup:
+    code: "Git repository with multiple remotes"
+    data: "Regular exports of critical data"
+    recovery: "Documented recovery procedures"
+    
+# Compliance and governance
+compliance:
+  standards:
+    accessibility: "WCAG 2.1 AA"
+    security: "OWASP Top 10"
+    privacy: "No PII collection without consent"
+    
+  documentation:
+    policies: "All policies documented and versioned"
+    procedures: "Standard operating procedures maintained"
+    training: "Developer onboarding documentation"
+    
+  audit:
+    frequency: "Quarterly policy review"
+    tracking: "Compliance metrics tracked"
+    reporting: "Regular compliance reports"
+    
+# Exception handling and appeals
+exceptions:
+  process:
+    request: "GitHub Issue with justification"
+    approval: "Project maintainer approval required"
+    tracking: "All exceptions documented"
+    
+  criteria:
+    temporaryWorkaround: "Short-term fixes with follow-up plan"
+    emergencyFix: "Critical security or availability issues"
+    experimentalFeature: "Prototype or proof-of-concept work"
+    
+  documentation:
+    rationale: "Clear business or technical justification"
+    timeline: "Expected duration and resolution plan"
+    riskAssessment: "Known risks and mitigation strategies"
+    
+# Enforcement and tooling
+enforcement:
+  automated:
+    linting: "ESLint with error-level rules"
+    typing: "TypeScript strict mode"
+    testing: "Required E2E test passage"
+    security: "Automated security scanning"
+    
+  manual:
+    codeReview: "Human review for complex changes"
+    securityReview: "Manual review for security-sensitive changes"
+    architectureReview: "Review for architectural decisions"
+    
+  reporting:
+    metrics: "Policy compliance metrics tracked"
+    violations: "Policy violations logged and addressed"
+    improvements: "Continuous policy improvement process"

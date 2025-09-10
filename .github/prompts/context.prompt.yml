@@ -1,50 +1,270 @@
 # Project Context Prompt
-# Purpose: Provide static, high-level repository & architectural context.
-# SRP: Only domain / architecture description (no remediation logic).
+# Purpose: Comprehensive repository context, architecture, and domain knowledge
+# SRP: Centralized source of truth for project understanding and technical context
 
-version: 1
+version: 2
 kind: context
+scope: project-architecture
 
+# Enhanced project definition
 project:
-  name: Zatrust Quickstart
+  name: "Zatrust Quickstart"
+  description: "Minimal, modular Next.js (TypeScript) starter focused on E2E testability, automated maintenance, and production readiness"
+  
   goals:
-    - Maintain perpetually green main branch
-    - Deterministic E2E validation for core flows
-    - Automated dependable dependency updates
-  stack:
-    runtime: nextjs@15
-    language: typescript@strict
-    ui: react@19
-    testing: playwright
-    workflows: [ci, codeql, shellcheck, automerge]
-  auth:
-    description: demo cookie auth via demo_user cookie guarded by middleware for /dashboard
-  architecture:
-    - Server Components default; introduce client boundaries minimally
-    - DRY utilities in src/lib
-    - Routes under src/app
+    primary:
+      - "Maintain perpetually green main branch with zero-downtime deployments"
+      - "Deterministic E2E validation covering critical user journeys"
+      - "Fully automated dependency updates with intelligent rollback"
+      - "Enhanced GitHub Copilot integration for code quality and maintenance"
+      
+    secondary:
+      - "Minimal bundle size with optimal performance metrics"
+      - "Comprehensive security scanning and vulnerability management"
+      - "Developer experience optimization with fast feedback loops"
+      - "Production-ready patterns with scalable architecture"
+  
+  constraints:
+    - "Keep dependencies minimal and well-maintained"
+    - "Maintain backwards compatibility within major versions"
+    - "Ensure all automation is idempotent and self-healing"
+    - "Follow SOLID principles and DRY patterns throughout"
 
+# Technology stack details
+stack:
+  runtime:
+    framework: "Next.js 15 (App Router)"
+    language: "TypeScript (strict mode)"
+    nodeVersions: ["20.x LTS", "22.x Current"]
+    
+  frontend:
+    ui: "React 19"
+    styling: "Tailwind CSS (future enhancement)"
+    bundler: "Next.js built-in (Turbopack)"
+    
+  testing:
+    e2e: "Playwright"
+    unitTests: "Jest (future enhancement)"
+    coverage: "c8/nyc (future enhancement)"
+    
+  automation:
+    ci: "GitHub Actions"
+    dependencyManagement: "Renovate + Dependabot"
+    security: "CodeQL + npm audit"
+    quality: "ESLint + TypeScript + Prettier"
+    
+  infrastructure:
+    containers: "Docker Dev Containers"
+    deployment: "Vercel/Netlify ready"
+    monitoring: "Bundle analysis + performance profiling"
+
+# Architecture principles and patterns
+architecture:
+  patterns:
+    components:
+      - "Server Components by default (React 18+ patterns)"
+      - "Client boundaries only at interactive leaves"
+      - "Props drilling avoided via composition"
+      - "Type-safe interfaces with strict TypeScript"
+      
+    routing:
+      - "App Router with nested layouts"
+      - "File-based routing with co-located components"
+      - "Middleware for authentication and redirects"
+      - "API routes for server-side logic"
+      
+    state:
+      - "No global state management (prefer server state)"
+      - "URL state for shareable application state"
+      - "Local component state for UI interactions only"
+      - "Context providers for theme/auth boundaries"
+      
+    data:
+      - "Server-side data fetching preferred"
+      - "Streaming and Suspense for loading states"
+      - "Static generation where possible"
+      - "ISR for dynamic content that can be cached"
+  
+  structure: |
+    src/
+      app/                 # Next.js App Router
+        (auth)/           # Route groups for auth flows
+        dashboard/        # Protected routes
+        api/              # API endpoints
+        globals.css       # Global styles
+        layout.tsx        # Root layout
+        page.tsx          # Home page
+      components/         # Reusable UI components
+        ui/               # Base UI components
+        auth/             # Authentication components
+      lib/                # Utilities and shared logic
+        utils.ts          # Common utilities
+        auth.ts           # Authentication helpers
+      middleware.ts       # Next.js middleware
+    tests/                # E2E tests
+    .github/              # GitHub automation
+      workflows/          # CI/CD workflows
+      prompts/            # Copilot prompts
+      instructions/       # Component guidelines
+
+# Authentication and security model
+auth:
+  strategy: "Demo cookie-based authentication"
+  implementation:
+    - "Simple cookie set/clear for demo purposes"
+    - "Middleware protection for /dashboard/* routes"
+    - "Sanitized redirect handling to prevent open redirects"
+    - "HttpOnly, SameSite=Lax cookie attributes"
+    
+  production:
+    recommendations:
+      - "Replace with NextAuth.js or Auth0"
+      - "Implement proper session management"
+      - "Add CSRF protection"
+      - "Enable 2FA for admin users"
+      
+  security:
+    current:
+      - "Input sanitization for redirect parameters"
+      - "Cookie security attributes properly set"
+      - "No sensitive data in localStorage"
+      
+    planned:
+      - "OWASP compliance scanning"
+      - "Penetration testing integration"
+      - "Security headers via middleware"
+
+# Quality assurance framework
 quality:
   scripts:
-    dev: npm run dev
-    qa: npm run quality:all
-    e2e: npm run test:e2e
+    development:
+      - "npm run dev - Start development server with hot reload"
+      - "npm run dev:fixed - Start on fixed port 3000"
+      
+    quality:
+      - "npm run quality:all - Complete quality pipeline"
+      - "npm run lint - ESLint with zero warnings tolerance"
+      - "npm run typecheck - TypeScript strict mode validation"
+      - "npm run test:e2e - Headless Playwright test suite"
+      
+    analysis:
+      - "npm run analyze - Bundle analysis with Next.js analyzer"
+      - "npm run doctor - Dependency health check"
+      - "npm audit - Security vulnerability scanning"
+      
   conventions:
-    commits: conventional
-    types: strict
-    accessibility: roles + semantic HTML
+    commits: "Conventional Commits (feat:, fix:, chore:, etc.)"
+    branches: "Feature branches with descriptive names"
+    prs: "Small, focused changes with comprehensive descriptions"
+    types: "Strict TypeScript with no any types"
+    testing: "E2E coverage for critical user journeys"
+    
+  accessibility:
+    standards: "WCAG 2.1 AA compliance target"
+    testing: "Playwright accessibility testing integrated"
+    implementation: "Semantic HTML + ARIA when necessary"
 
-metrics:
-  reliability:
-    ciPassRateTarget: 100%
-  performance:
-    bundleAnalyzeCmd: npm run analyze
+# Performance and monitoring
+performance:
+  metrics:
+    build:
+      target: "<30 seconds"
+      monitoring: "GitHub Actions build time tracking"
+      
+    bundle:
+      target: "Initial bundle <500KB gzipped"
+      monitoring: "Bundle analyzer in CI pipeline"
+      
+    runtime:
+      lcp: "<2.5 seconds"
+      fid: "<100 milliseconds"
+      cls: "<0.1"
+      
+  optimization:
+    strategies:
+      - "Next.js Image optimization for all images"
+      - "Dynamic imports for large libraries"
+      - "Server-side rendering for initial page load"
+      - "Static generation for marketing pages"
+      
+    monitoring:
+      - "Bundle analysis in CI pipeline"
+      - "Lighthouse CI integration (future)"
+      - "Real User Monitoring (future)"
 
-references:
-  docs:
-    - .github/copilot-instructions.md
-  automationPrompts:
-    - .github/prompts/automation.prompt.yml
-  related:
-    - .github/prompts/maintenance.prompt.yml
-    - .github/prompts/policies.prompt.yml
+# Development workflow
+workflow:
+  branching:
+    strategy: "GitHub Flow (feature branches to main)"
+    protection: "Main branch protected with required status checks"
+    
+  automation:
+    triggers:
+      - "Push to main: Full CI pipeline"
+      - "PR creation: Quality checks + security review"
+      - "Dependency updates: Automated testing + merge"
+      - "Security alerts: Immediate analysis + patching"
+      
+    feedback:
+      - "Sub-5-minute feedback for lint/type errors"
+      - "Sub-10-minute feedback for test results"
+      - "Sub-30-minute feedback for full pipeline"
+
+# Integration ecosystem
+integrations:
+  github:
+    features: ["Actions", "Issues", "Projects", "Security", "Copilot"]
+    automation: ["Dependabot", "Renovate", "CodeQL", "Issue creation"]
+    
+  copilot:
+    capabilities: ["Code suggestions", "Issue remediation", "PR automation"]
+    prompts: ["Automation", "Maintenance", "Context", "Policies"]
+    instructions: ["React components", "Playwright tests"]
+    
+  deployment:
+    platforms: ["Vercel", "Netlify", "Custom Docker"]
+    requirements: ["Node.js runtime", "Build command", "Output directory"]
+
+# Documentation and references
+documentation:
+  primary:
+    - ".github/copilot-instructions.md - Copilot guidance and conventions"
+    - "README.md - Setup, development, and troubleshooting"
+    - "package.json - Scripts and dependency information"
+    
+  automation:
+    - ".github/prompts/ - Copilot prompt configurations"
+    - ".github/workflows/ - CI/CD pipeline definitions"
+    - ".github/dependabot.yml - Dependency update configuration"
+    - ".github/renovate.json - Advanced dependency management"
+    
+  development:
+    - "src/ - Source code with inline documentation"
+    - "tests/ - E2E test specifications and helpers"
+    - ".devcontainer/ - Development environment setup"
+    
+  external:
+    - "Next.js Documentation - https://nextjs.org/docs"
+    - "React Documentation - https://react.dev"
+    - "Playwright Documentation - https://playwright.dev"
+    - "TypeScript Handbook - https://www.typescriptlang.org/docs"
+
+# Future roadmap
+roadmap:
+  short_term:
+    - "Add unit test framework (Jest/Vitest)"
+    - "Implement Tailwind CSS for styling"
+    - "Add Storybook for component development"
+    - "Integrate Lighthouse CI for performance monitoring"
+    
+  medium_term:
+    - "Add database integration (Prisma + PostgreSQL)"
+    - "Implement proper authentication (NextAuth.js)"
+    - "Add API rate limiting and caching"
+    - "Integrate error tracking (Sentry)"
+    
+  long_term:
+    - "Multi-tenant architecture support"
+    - "Internationalization (i18n) framework"
+    - "Progressive Web App (PWA) capabilities"
+    - "Advanced analytics and monitoring"

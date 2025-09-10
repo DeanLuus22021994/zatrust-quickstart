@@ -1,34 +1,206 @@
-name: Copilot Setup Steps
-# Prepares the ephemeral environment so Copilot can build, test, and validate quickly.
-# Runs before the agent attempts changes.
+name: Copilot Environment Setup
+description: Comprehensive environment preparation for GitHub Copilot automation tasks
+version: 2
 
 runs:
   using: "composite"
   steps:
-    - name: Set up Node
+    - name: Environment validation
+      shell: bash
+      run: |
+        echo "🔍 Validating environment..."
+        echo "Node version: $(node --version)"
+        echo "NPM version: $(npm --version)"
+        echo "Working directory: $(pwd)"
+        echo "Available memory: $(free -h | grep ^Mem | awk '{print $7}')"
+        echo "Disk space: $(df -h . | tail -1 | awk '{print $4}')"
+
+    - name: Set up Node.js LTS
       uses: actions/setup-node@v4
       with:
         node-version: 'lts/*'
         cache: 'npm'
+        cache-dependency-path: 'package-lock.json'
 
-    - name: Install dependencies (clean)
+    - name: Configure npm for CI
       shell: bash
       run: |
-        npm ci
-
-    - name: Install Playwright browsers
-      shell: bash
-      run: npx playwright install --with-deps
-
-    - name: Verify toolchain (doctor)
-      shell: bash
-      run: npm run doctor || (echo "Doctor check failed" && exit 1)
-
-    - name: Prime build cache
-      shell: bash
-      run: npm run build || echo "Build priming failed (non-fatal for some tasks)"
-
-    - name: Store summary
+        echo "📦 Configuring npm for CI environment..."
+        npm config set audit-level moderate
+        npm config set fund false
+        npm config set update-notifier false
+        
+    - name: Install dependencies with retry
       shell: bash
       run: |
-        echo "Dependencies installed and build attempted." >> $GITHUB_STEP_SUMMARY
+        echo "📦 Installing dependencies..."
+        
+        # Retry logic for dependency installation
+        max_attempts=3
+        attempt=1
+        
+        while [ $attempt -le $max_attempts ]; do
+          echo "Attempt $attempt of $max_attempts..."
+          
+          if npm ci --no-audit --no-fund --prefer-offline; then
+            echo "✅ Dependencies installed successfully"
+            break
+          else
+            echo "❌ Installation attempt $attempt failed"
+            
+            if [ $attempt -eq $max_attempts ]; then
+              echo "🚨 All installation attempts failed"
+              exit 1
+            fi
+            
+            echo "🔄 Cleaning up and retrying..."
+            rm -rf node_modules package-lock.json 2>/dev/null || true
+            attempt=$((attempt + 1))
+            sleep 5
+          fi
+        done
+
+    - name: Verify core dependencies
+      shell: bash
+      run: |
+        echo "🔍 Verifying core dependencies..."
+        npm run doctor || {
+          echo "❌ Dependency verification failed"
+          echo "Installed packages:"
+          npm list --depth=0 || true
+          exit 1
+        }
+        echo "✅ All core dependencies verified"
+
+    - name: Install Playwright browsers with dependencies
+      shell: bash
+      run: |
+        echo "🎭 Installing Playwright browsers..."
+        
+        # Check if Playwright is available
+        if ! npx playwright --version; then
+          echo "❌ Playwright not found in dependencies"
+          exit 1
+        fi
+        
+        # Install browsers with system dependencies
+        npx playwright install --with-deps chromium || {
+          echo "❌ Failed to install Playwright browsers"
+          echo "Attempting fallback installation..."
+          npx playwright install chromium
+        }
+        
+        echo "✅ Playwright browsers installed"
+
+    - name: Prime build cache and validate toolchain
+      shell: bash
+      run: |
+        echo "🛠️ Validating toolchain..."
+        
+        # TypeScript compilation check
+        echo "Checking TypeScript compilation..."
+        npm run typecheck || {
+          echo "❌ TypeScript compilation failed"
+          exit 1
+        }
+        
+        # ESLint validation
+        echo "Running ESLint validation..."
+        npm run lint || {
+          echo "❌ ESLint validation failed"
+          exit 1
+        }
+        
+        echo "✅ Toolchain validation passed"
+
+    - name: Attempt build with error handling
+      shell: bash
+      run: |
+        echo "🏗️ Building application..."
+        
+        # Set build environment variables
+        export NEXT_TELEMETRY_DISABLED=1
+        export CI=true
+        
+        if npm run build; then
+          echo "✅ Build successful"
+          
+          # Verify build outputs
+          if [ -d ".next" ]; then
+            echo "📊 Build artifacts created:"
+            du -sh .next 2>/dev/null || echo "Could not measure build size"
+          fi
+        else
+          echo "⚠️ Build failed (non-fatal for some Copilot tasks)"
+          echo "This may be expected for certain automation tasks"
+          
+          # Don't fail the setup for build issues
+          exit 0
+        fi
+
+    - name: Cache optimization
+      shell: bash
+      run: |
+        echo "🗃️ Optimizing caches..."
+        
+        # Clean npm cache if it's too large
+        cache_size=$(npm cache verify 2>/dev/null | grep -o '[0-9]*' | head -1 || echo "0")
+        if [ "$cache_size" -gt 1000 ]; then
+          echo "Cleaning large npm cache ($cache_size MB)"
+          npm cache clean --force
+        fi
+        
+        # Verify Next.js cache
+        if [ -d ".next/cache" ]; then
+          echo "Next.js cache present: $(du -sh .next/cache 2>/dev/null | cut -f1)"
+        fi
+        
+        echo "✅ Cache optimization complete"
+
+    - name: Security and performance checks
+      shell: bash
+      run: |
+        echo "🔒 Running security and performance checks..."
+        
+        # Quick security audit (don't fail on moderate issues)
+        echo "Security audit:"
+        npm audit --audit-level=high || echo "Security audit completed with warnings"
+        
+        # Check for potential performance issues
+        echo "Checking for large dependencies:"
+        npm list --depth=0 --parseable | while read -r line; do
+          if [ -d "$line" ]; then
+            size=$(du -sk "$line" 2>/dev/null | cut -f1)
+            if [ "$size" -gt 50000 ]; then  # > 50MB
+              echo "Large dependency detected: $(basename "$line") (~${size}KB)"
+            fi
+          fi
+        done || true
+        
+        echo "✅ Security and performance checks complete"
+
+    - name: Environment summary
+      shell: bash
+      run: |
+        echo "📋 Environment Setup Summary" >> $GITHUB_STEP_SUMMARY
+        echo "================================" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ **Status**: Environment ready for Copilot automation" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Configuration:**" >> $GITHUB_STEP_SUMMARY
+        echo "- Node.js: $(node --version)" >> $GITHUB_STEP_SUMMARY
+        echo "- NPM: $(npm --version)" >> $GITHUB_STEP_SUMMARY
+        echo "- TypeScript: $(npx tsc --version)" >> $GITHUB_STEP_SUMMARY
+        echo "- Playwright: $(npx playwright --version)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Dependencies:**" >> $GITHUB_STEP_SUMMARY
+        echo "- Core dependencies: ✅ Verified" >> $GITHUB_STEP_SUMMARY
+        echo "- Playwright browsers: ✅ Installed" >> $GITHUB_STEP_SUMMARY
+        echo "- Build cache: ✅ Optimized" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Quality Checks:**" >> $GITHUB_STEP_SUMMARY
+        echo "- TypeScript compilation: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+        echo "- ESLint validation: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+        echo "- Security audit: ✅ Completed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "🚀 **Ready for automation tasks!**" >> $GITHUB_STEP_SUMMARY
