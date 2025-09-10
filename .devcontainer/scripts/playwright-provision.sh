@@ -57,7 +57,9 @@ install_deps() {
     return 0
   fi
   if command -v apt-get >/dev/null 2>&1; then
-    if [ "$(id -u)" -eq 0 ]; then
+    local current_uid
+    current_uid="$(id -u)"
+    if [ "$current_uid" -eq 0 ]; then
       log "Installing / updating Playwright OS dependencies"
       if npx --yes playwright install-deps >/dev/null 2>&1; then
         touch "$deps_marker" || true
@@ -89,9 +91,9 @@ install_browsers() {
     return 0
   fi
   log "Installing browsers: $PW_BROWSERS"
-  if ! npx --yes playwright install $PW_BROWSERS; then
+  if ! npx --yes playwright install "$PW_BROWSERS"; then
     log "Browser install failed -> retrying once"
-    npx --yes playwright install $PW_BROWSERS
+    npx --yes playwright install "$PW_BROWSERS"
   fi
   touch "$browser_marker" || true
   log "Browser install complete"
