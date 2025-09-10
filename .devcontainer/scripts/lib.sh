@@ -56,12 +56,26 @@ install_node_dependencies() {
   if [ -f package-lock.json ]; then
     log "npm ci (fallback to install)"
     if ! npm ci --no-audit --no-fund; then
-      log "npm ci failed -> npm install"
-      npm install --no-audit --no-fund
+      log "npm ci failed -> attempting clean recovery"
+      rm -rf node_modules
+      if ! npm install --no-audit --no-fund; then
+        log "npm install failed -> removing lockfile and retrying fresh"
+        rm -f package-lock.json
+        npm install --no-audit --no-fund
+      fi
     fi
   else
     log "No lockfile -> npm install"
     npm install --no-audit --no-fund
+  fi
+  # Post-install sanity checks for TypeScript / ESLint resolution
+  if [ ! -f node_modules/typescript/lib/tsserver.js ]; then
+    log "TypeScript tsserver missing -> reinstalling typescript"
+    npm install --no-audit --no-fund typescript@latest
+  fi
+  if [ ! -d node_modules/eslint ]; then
+    log "ESLint missing -> reinstalling eslint"
+    npm install --no-audit --no-fund eslint@latest
   fi
 }
 

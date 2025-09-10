@@ -77,3 +77,31 @@ npm run provision
 ```
 
 This is safe to run repeatedly (idempotent operations).
+
+## Troubleshooting
+
+### VS Code shows: The path .../node_modules/typescript/lib/tsserver.js doesn't point to a valid tsserver
+
+This can happen if the dependency install was interrupted. The provisioning script now:
+
+- Falls back from `npm ci` to `npm install`
+- Cleans `node_modules` and retries if needed
+- Reinstalls `typescript` and `eslint` if their expected files are missing
+
+Manual fix:
+
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
+
+Then reload the window.
+
+### JS/TS Language Service crashes
+
+Try:
+
+1. Disable Copilot Chat temporarily
+2. Run `npm run doctor` to verify key packages
+3. Run `npm run provision` (idempotent)
+4. Reload VS Code (`Developer: Reload Window`)
