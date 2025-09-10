@@ -3,6 +3,7 @@
   "dockerComposeFile": ["../docker-compose.yml"],
   "service": "dev",
   "workspaceFolder": "/workspaces/zatrust-quickstart",
+  "overrideCommand": false,
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
       "version": "20"

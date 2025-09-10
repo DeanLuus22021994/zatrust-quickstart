@@ -1,6 +1,7 @@
 services:
   dev:
     image: mcr.microsoft.com/devcontainers/javascript-node:20
+    user: node
     volumes:
       - .:/workspaces/zatrust-quickstart:cached
       - node_modules:/workspaces/zatrust-quickstart/node_modules
