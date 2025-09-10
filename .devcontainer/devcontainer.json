@@ -22,7 +22,15 @@
           "typescriptreact"
         ],
         "typescript.tsdk": "./node_modules/typescript/lib",
-        "typescript.enablePromptUseWorkspaceTsdk": true
+        "typescript.enablePromptUseWorkspaceTsdk": true,
+        // Force VS Code to use the workspace TS only (avoids mixed/bundled TS mismatch crashes)
+        "typescript.tsserver.useSyntaxServer": "never",
+        // Increase memory ceiling in case large dependency graph was triggering OOM & crash
+        "typescript.tsserver.maxTsServerMemory": 4096,
+        // Helpful when diagnosing future crashes; set to "off" after stable
+        "typescript.tsserver.log": "off",
+        // Avoid excessive project diagnostic work during startup (stability)
+        "typescript.tsserver.experimental.enableProjectDiagnostics": false
       },
       "extensions": [
         "dbaeumer.vscode-eslint",
@@ -36,7 +44,7 @@
   "containerEnv": {
     "GITHUB_REPOSITORY": "DeanLuus22021994/zatrust-quickstart",
     "GH_RUNNER_LABELS": "self-hosted,devcontainer,linux,x64",
-    "ENABLE_GH_RUNNER": "false"
+    "ENABLE_GH_RUNNER": "true"
   },
   "postCreateCommand": "bash .devcontainer/scripts/provision.sh",
   "postStartCommand": "bash -lc 'if [ ! -f .next/BUILD_ID ]; then echo [postStart] Starting dev server; npm run dev & else echo [postStart] Reusing existing build; fi'",

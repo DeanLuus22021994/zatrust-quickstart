@@ -70,6 +70,20 @@ Security note: If pinning `GITHUB_RUNNER_VERSION`, the download is verified with
 
 Playwright installation is conditional: if the `tests/` directory is absent, browser binaries are skipped to speed up provisioning.
 
+### Enable self-hosted GitHub Actions runner inside Dev Container
+
+Set in `.devcontainer/devcontainer.json`:
+
+```jsonc
+"containerEnv": {
+  "GITHUB_REPOSITORY": "owner/repo",
+  "GH_RUNNER_LABELS": "self-hosted,devcontainer,linux,x64",
+  "ENABLE_GH_RUNNER": "true"
+}
+```
+
+Export `GITHUB_PERSONAL_ACCESS_TOKEN` (repo scope) before rebuild or add to Dev Container secrets to allow registration.
+
 Re-run provisioning manually:
 
 ```bash

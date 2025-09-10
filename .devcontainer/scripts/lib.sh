@@ -10,6 +10,10 @@
 ###############################################################################
 set -euo pipefail
 
+# Mitigate potential TS language service crashes due to legacy watch settings inside containers.
+export TSC_WATCHFILE=UseFsEventsWithFallbackDynamicPolling
+export TSC_NONPOLLING_WATCHER=1
+
 LOG_PREFIX="[devcontainer]"
 log() { printf '%s %s\n' "$LOG_PREFIX" "$*"; }
 
