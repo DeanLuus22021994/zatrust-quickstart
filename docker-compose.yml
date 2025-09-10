@@ -24,6 +24,9 @@ services:
       # NODE_OPTIONS: "--max_old_space_size=2048"
     volumes:
       - .:/workspaces/zatrust-quickstart:cached
+      # Secondary mount to provide legacy /zatrust-quickstart path (avoids TS server
+      # warnings referencing /zatrust-quickstart/... when editor extensions cache a root path).
+      - .:/zatrust-quickstart:cached
       # Playwright browser/cache persistence (improves cold start performance)
       - playwright-cache:/home/node/.cache/ms-playwright
       # Optional: Persist node_modules in a named volume to isolate from host OS.
@@ -59,6 +62,7 @@ services:
     # Separate persistent runner work directory for binaries/config (idempotent restarts)
     volumes:
       - .:/workspaces/zatrust-quickstart:cached
+      - .:/zatrust-quickstart:cached
       - runner-work:/tmp/actions-runner
     environment:
       GITHUB_REPOSITORY: DeanLuus22021994/zatrust-quickstart

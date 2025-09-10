@@ -133,6 +133,10 @@ rm -rf node_modules/.cache/typescript 2>/dev/null || true
 Reload VS Code window
 ```
 
+### Dual mount to address tsserver path mismatch
+
+A secondary bind mount to /zatrust-quickstart is added in docker-compose to satisfy tools that reference that root path. This avoids tsserver 'invalid install' warnings caused by stale absolute paths inside extension caches.
+
 ### Removed root symlink workaround
 
 The earlier attempt to create /zatrust-quickstart symlink was removed (permission issues). Not required for TypeScript resolution.

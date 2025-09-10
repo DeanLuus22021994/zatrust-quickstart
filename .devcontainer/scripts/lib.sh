@@ -94,6 +94,8 @@ install_node_dependencies() {
     log "No lockfile -> npm install"
     npm install --no-audit --no-fund
   fi
+  # Ensure workspace path stability hints for editors
+  printf 'typesRoot=%s\n' "/workspaces/zatrust-quickstart/node_modules" > .tsserver-hints 2>/dev/null || true
   # Post-install sanity checks for TypeScript / ESLint resolution
   if [ ! -f node_modules/typescript/lib/tsserver.js ]; then
     log "TypeScript tsserver missing -> reinstalling typescript"
