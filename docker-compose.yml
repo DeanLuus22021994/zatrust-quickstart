@@ -29,4 +29,16 @@ services:
     #   volumes:
     #     - node_modules:/workspaces/zatrust-quickstart/node_modules
     # and ensure a root-owned chown step runs before npm install.
-# Removed named volume "node_modules" to simplify permissions.
+  # Removed named volume "node_modules" to simplify permissions.
+  runner:
+    image: mcr.microsoft.com/devcontainers/javascript-node:20
+    profiles: ["runner"]
+    working_dir: /workspaces/zatrust-quickstart
+    volumes:
+      - .:/workspaces/zatrust-quickstart:cached
+    environment:
+      - GITHUB_REPOSITORY=DeanLuus22021994/zatrust-quickstart
+      - GH_RUNNER_LABELS=self-hosted,compose,linux,x64
+      - ENABLE_GH_RUNNER=true
+    entrypoint: ["bash", "-lc", "bash .github/scripts/start-runner.sh"]
+    restart: unless-stopped
