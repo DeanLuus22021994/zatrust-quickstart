@@ -54,5 +54,5 @@
     "WEB_PORT": "3000",
     "PWDEBUG_PORT": "9323"
   },
-  "remoteUser": "node"
+  "remoteUser": "root"
 }
