@@ -17,7 +17,8 @@
     "deps:outdated": "npm outdated",
     "deps:update:minor": "npx npm-check-updates --target minor -u && npm install",
     "deps:update:all": "npx npm-check-updates -u && npm install",
-    "quality:all": "npm run lint && npm run typecheck && npm run test:e2e"
+    "quality:all": "npm run lint && npm run typecheck && npm run test:e2e",
+    "provision": "bash .devcontainer/scripts/provision.sh"
   },
   "dependencies": {
     "next": "^15.5.2",
