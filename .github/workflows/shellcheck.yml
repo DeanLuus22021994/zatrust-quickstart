@@ -63,7 +63,7 @@ jobs:
         with:
           script: |
             const title = 'ShellCheck Failure';
-            const body = 'Automated issue due to ShellCheck failure. See shellcheck-report artifact. Remediation: .github/instructions/automation.prompt.yml';
+            const body = 'Automated issue due to ShellCheck failure. See shellcheck-report artifact. Remediation: .github/prompts/automation.prompt.yml';
             const { data: issues } = await github.rest.issues.listForRepo({ ...context.repo, state:'open', labels:'shellcheck-failure' });
             if (!issues.find(i=>i.title===title)) {
               await github.rest.issues.create({ ...context.repo, title, body, labels:['shellcheck-failure','automation']});

@@ -1,0 +1,34 @@
+name: Copilot Setup Steps
+# Prepares the ephemeral environment so Copilot can build, test, and validate quickly.
+# Runs before the agent attempts changes.
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 'lts/*'
+        cache: 'npm'
+
+    - name: Install dependencies (clean)
+      shell: bash
+      run: |
+        npm ci
+
+    - name: Install Playwright browsers
+      shell: bash
+      run: npx playwright install --with-deps
+
+    - name: Verify toolchain (doctor)
+      shell: bash
+      run: npm run doctor || (echo "Doctor check failed" && exit 1)
+
+    - name: Prime build cache
+      shell: bash
+      run: npm run build || echo "Build priming failed (non-fatal for some tasks)"
+
+    - name: Store summary
+      shell: bash
+      run: |
+        echo "Dependencies installed and build attempted." >> $GITHUB_STEP_SUMMARY

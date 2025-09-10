@@ -127,7 +127,7 @@ jobs:
               'Automated issue created due to CI failure.',
               `Ref: ${ref}`,
               'Investigate first failing job; ignore cascade errors.',
-              'See .github/instructions/automation.prompt.yml for remediation.'
+              'See .github/prompts/automation.prompt.yml for remediation.'
             ].join('\\n');
             const { data: issues } = await github.rest.issues.listForRepo({ ...context.repo, state:'open', labels:'ci-failure' });
             if (!issues.find(i=>i.title===title)) {

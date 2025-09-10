@@ -76,6 +76,7 @@ src/
 - Principle of Least Privilege in workflows; avoid broad write perms unless needed.
 
 ## Remediation Quick Checklist
+
 1. Reproduce locally (`npm run quality:all`).
 2. Fix minimal root cause.
 3. Add/adjust tests if behavior changes.
@@ -84,8 +85,9 @@ src/
 6. Reference issue in PR.
 
 ## Reference Prompts
-- Automation: `.github/instructions/automation.prompt.yml`
-- Maintenance: `.github/instructions/maintenance.prompt.yml`
+
+- Automation: `.github/prompts/automation.prompt.yml`
+- Maintenance: `.github/prompts/maintenance.prompt.yml`
 - Policies: `.github/instructions/policies.prompt.yml`
 - Context: `.github/instructions/context.prompt.yml`
 
