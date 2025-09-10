@@ -6,25 +6,23 @@ type LoginFormProps = {
 
 export default function LoginForm({ from }: LoginFormProps) {
   return (
-    <form action="/api/auth/login" method="post" style={{ maxWidth: 320 }}>
+    <form action="/api/auth/login" method="post" className="login-form">
       {from && <input type="hidden" name="from" value={from} />}
       <label htmlFor="username">
         Username
-        <input 
+        <input
           id="username"
-          name="username" 
-          placeholder="demo" 
-          required 
+          name="username"
+          placeholder="demo"
+          required
           aria-describedby="username-help"
         />
       </label>
-      <div id="username-help" style={{ fontSize: 14, color: '#666', marginTop: 4 }}>
+      <div id="username-help" className="login-help">
         Enter any username to continue
       </div>
-      <div style={{ marginTop: 12 }}>
-        <button type="submit">
-          Login
-        </button>
+      <div className="login-actions">
+        <button type="submit">Login</button>
       </div>
     </form>
   );
