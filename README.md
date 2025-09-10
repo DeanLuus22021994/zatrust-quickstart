@@ -24,7 +24,7 @@ Quick start
 
 App scripts
 
-- `npm run dev` – starts dev server on first free port >= 3000 (prints chosen port)
+- `npm run dev` – starts dev server on first free port >= 3000 (prints chosen port). Accepts `-p <port>` to require a specific port (errors if unavailable).
 - `npm run dev:fixed` – force dev server on port 3000 (may conflict if already in use)
 - (Standalone compose only) Uncomment ports in `docker-compose.yml` to explicitly map host ports
 - `WEB_PORT=3100 docker compose up -d dev` – example explicit host port mapping (when ports are uncommented)
@@ -41,3 +41,7 @@ This starter uses a minimal cookie-based demo auth to keep dependencies low. For
 Repo guidance for GitHub Copilot
 
 See `.github/copilot-instructions.md` for conventions and architectural guidance to keep changes DRY, SRP, SOLID, modular, and testable.
+
+Permissions / node_modules note
+
+Previously a named Docker volume was used for `node_modules`. This caused `EACCES` during `npm install` in the Dev Container because the volume root was owned by root. The setup now keeps `node_modules` inside the project bind mount for simplicity. If you need to isolate Linux-only dependencies from the host (e.g. on Windows), you can reintroduce a named volume and add a root-owned chown step before installing dependencies.

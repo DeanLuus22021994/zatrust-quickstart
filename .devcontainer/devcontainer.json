@@ -31,8 +31,8 @@
       ]
     }
   },
-  "postCreateCommand": "npm install && npx playwright install",
-  "postStartCommand": "bash -lc 'if [ ! -f .next/BUILD_ID ]; then echo Starting dev server; npm run dev & fi'",
+  "postCreateCommand": "bash -lc 'set -e; echo [postCreate] Ensuring writable node_modules; mkdir -p node_modules; if [ ! -w node_modules ]; then echo [postCreate] Attempting chown; sudo chown -R node:node node_modules || true; fi; echo [postCreate] Installing deps (ci->install fallback); (npm ci || npm install); echo [postCreate] Installing Playwright browsers; npx playwright install --with-deps; echo [postCreate] Done'",
+  "postStartCommand": "bash -lc 'if [ ! -f .next/BUILD_ID ]; then echo [postStart] Starting dev server; npm run dev & else echo [postStart] Reusing existing build; fi'",
   "forwardPorts": [3000, 9323],
   "remoteEnv": {
     "WEB_PORT": "3000",

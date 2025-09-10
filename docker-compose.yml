@@ -1,10 +1,10 @@
 services:
   dev:
     image: mcr.microsoft.com/devcontainers/javascript-node:20
-    user: node
     volumes:
       - .:/workspaces/zatrust-quickstart:cached
-      - node_modules:/workspaces/zatrust-quickstart/node_modules
+      # Using the project's bind mount for node_modules to avoid permission issues with a root-owned named volume.
+      # (Previously a named volume caused EACCES during npm install for user "node").
     command: sleep infinity
     # Host port bindings removed. Dev Containers will forward container ports dynamically
     # to an available host port, avoiding collisions with already used host ports.
@@ -25,5 +25,8 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
-volumes:
-  node_modules:
+    # NOTE: If you really need to isolate Linux-built node_modules from the host, reintroduce a named volume:
+    #   volumes:
+    #     - node_modules:/workspaces/zatrust-quickstart/node_modules
+    # and ensure a root-owned chown step runs before npm install.
+# Removed named volume "node_modules" to simplify permissions.
