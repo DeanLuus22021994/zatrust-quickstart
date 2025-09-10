@@ -1,44 +1,83 @@
 services:
-  dev:
+  # ----------------------------------------------------------------------------
+  # Common Node service definition (DRY via YAML anchor). Provides:
+  # - Consistent working directory & user context
+  # - Bind mount of project source for live development
+  # - Dedicated cache volume for Playwright browsers (speeds repeated installs)
+  # - Sensible ulimits & security hardening (no new privileges)
+  # - Optional named volume strategy (commented) for node_modules isolation
+  # ----------------------------------------------------------------------------
+  dev: &node-base
     image: mcr.microsoft.com/devcontainers/javascript-node:20
+    working_dir: /workspaces/zatrust-quickstart
+    user: node
+    command: sleep infinity
+    # Port publishing intentionally omitted for Dev Containers (port forwarding handled automatically).
+    # For standalone usage, uncomment below lines:
+    # ports:
+    #   - "${WEB_PORT:-3000}:3000"
+    #   - "${PWDEBUG_PORT:-9323}:9323"
+    environment:
+      NODE_ENV: development
+      NEXT_TELEMETRY_DISABLED: "1"
+      # NOTE: Additional tuning env vars (uncomment as needed):
+      # NODE_OPTIONS: "--max_old_space_size=2048"
     volumes:
       - .:/workspaces/zatrust-quickstart:cached
-      # Using the project's bind mount for node_modules to avoid permission issues with a root-owned named volume.
-      # (Previously a named volume caused EACCES during npm install for user "node").
-    command: sleep infinity
-    # Host port bindings removed. Dev Containers will forward container ports dynamically
-    # to an available host port, avoiding collisions with already used host ports.
-    # For standalone docker compose (outside VS Code Dev Containers), you can uncomment:
-    # ports:
-    #   - "${WEB_PORT:-3000}:3000"          # Map container port 3000 to chosen host port
-    #   - "${PWDEBUG_PORT:-9323}:9323"      # Playwright inspector / debug
-    environment:
-      - NODE_ENV=development
-      - NEXT_TELEMETRY_DISABLED=1
-    working_dir: /workspaces/zatrust-quickstart
+      # Playwright browser/cache persistence (improves cold start performance)
+      - playwright-cache:/home/node/.cache/ms-playwright
+      # Optional: Persist node_modules in a named volume to isolate from host OS.
+      # Enable only if you hit host/container incompatibilities.
+      # - node_modules:/workspaces/zatrust-quickstart/node_modules
+    # Harden container (drop ability to gain more privileges)
+    security_opt:
+      - no-new-privileges:true
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    # Lightweight healthcheck verifying dev server (if running) responds with 200.
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          'node -e "require(''http'').get(''http://localhost:3000'',r=>{process.exit(r.statusCode===200?0:1);}).on(''error'',()=>process.exit(1));"',
+          'node -e ''require("http").get("http://localhost:3000",r=>process.exit(r.statusCode===200?0:1)).on("error",()=>process.exit(1));''',
         ]
       interval: 30s
       timeout: 5s
       retries: 5
-    # NOTE: If you really need to isolate Linux-built node_modules from the host, reintroduce a named volume:
-    #   volumes:
-    #     - node_modules:/workspaces/zatrust-quickstart/node_modules
-    # and ensure a root-owned chown step runs before npm install.
-  # Removed named volume "node_modules" to simplify permissions.
+      start_period: 10s
+    restart: unless-stopped
+    # tmpfs for /tmp can improve I/O performance (uncomment if desired):
+    # tmpfs:
+    #   - /tmp
+
+  # Self-hosted GitHub Actions runner (opt-in via profile & ENABLE_GH_RUNNER=true).
   runner:
-    image: mcr.microsoft.com/devcontainers/javascript-node:20
+    <<: *node-base
     profiles: ["runner"]
-    working_dir: /workspaces/zatrust-quickstart
+    # Separate persistent runner work directory for binaries/config (idempotent restarts)
     volumes:
       - .:/workspaces/zatrust-quickstart:cached
+      - runner-work:/tmp/actions-runner
     environment:
-      - GITHUB_REPOSITORY=DeanLuus22021994/zatrust-quickstart
-      - GH_RUNNER_LABELS=self-hosted,compose,linux,x64
-      - ENABLE_GH_RUNNER=true
+      GITHUB_REPOSITORY: DeanLuus22021994/zatrust-quickstart
+      GH_RUNNER_LABELS: self-hosted,compose,linux,x64
+      ENABLE_GH_RUNNER: "true"
+      # Optionally pin a runner version (recommended for reproducibility):
+      # GITHUB_RUNNER_VERSION: v2.320.0
     entrypoint: ["bash", "-lc", "bash .devcontainer/scripts/start-runner.sh"]
     restart: unless-stopped
+    # Runner specific tmpfs (ephemeral workspace scratch) - uncomment if higher IOPS needed:
+    # tmpfs:
+    #   - /tmp
+
+# ----------------------------------------------------------------------------
+# Named Volumes
+# ----------------------------------------------------------------------------
+volumes:
+  playwright-cache:
+    driver: local
+  runner-work:
+    driver: local
+  # node_modules: {} # Uncomment if enabling the node_modules named volume above
