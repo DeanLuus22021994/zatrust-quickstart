@@ -1,0 +1,41 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":separateMultipleMajorReleases",
+    "group:monorepos",
+    "group:test"
+  ],
+  "timezone": "UTC",
+  "schedule": ["before 5am on monday"],
+  "rangeStrategy": "bump",
+  "packageRules": [
+    {
+      "matchPackagePatterns": ["^react$", "^react-dom$", "^next$"],
+      "groupName": "react-next-major",
+      "matchUpdateTypes": ["major"],
+      "stabilityDays": 3
+    },
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "matchDepTypes": ["devDependencies"],
+      "groupName": "dev-deps-minor-patch",
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
+    }
+  ],
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 5,
+  "labels": ["dependencies"],
+  "semanticCommits": true,
+  "ignorePaths": ["**/test-results/**"],
+  "rollbackPrs": true,
+  "rollbackPrsLimit": 3
+}
