@@ -13,12 +13,15 @@
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
     "test:e2e:ui": "PWDEBUG=1 playwright test",
-    "health": "node -e \"require('http').get('http://localhost:${PORT||3000}', r=>{console.log(r.statusCode===200?'ok':'down');})\""
+    "health": "node -e \"require('http').get('http://localhost:${PORT||3000}', r=>{console.log(r.statusCode===200?'ok':'down');})\"",
+    "deps:outdated": "npm outdated",
+    "deps:update:minor": "npx npm-check-updates --target minor -u && npm install",
+    "quality:all": "npm run lint && npm run typecheck && npm run test:e2e"
   },
   "dependencies": {
-    "next": "14.2.5",
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "next": "^14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.46.0",
@@ -28,6 +31,7 @@
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.5",
     "prettier": "^3.3.3",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.3",
+    "npm-check-updates": "^17.0.0"
   }
 }
