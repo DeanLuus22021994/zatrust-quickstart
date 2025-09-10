@@ -17,15 +17,19 @@ Includes:
 Quick start
 
 - Prerequisites: Docker Desktop, VS Code + Dev Containers extension
-- One command (PowerShell):
+- Recommended: Use VS Code "Reopen in Container" (auto-detects)
+- One command (PowerShell) for detached dev infra:
   - `docker compose up -d dev`
-  - Then: "Dev Containers: Reopen in Container" in VS Code (or it auto-detects)
+  - VS Code will forward container port 3000 to an available host port if 3000 is busy.
 
 App scripts
 
-- `npm run dev` – start Next.js dev server on http://localhost:3000
+- `npm run dev` – starts dev server on first free port >= 3000 (prints chosen port)
+- `npm run dev:fixed` – force dev server on port 3000 (may conflict if already in use)
+- (Standalone compose only) Uncomment ports in `docker-compose.yml` to explicitly map host ports
+- `WEB_PORT=3100 docker compose up -d dev` – example explicit host port mapping (when ports are uncommented)
 - `npm run build` – build
-- `npm run start` – run production build
+- `npm run start` – run production build (uses PORT env or 3000)
 - `npm run lint` – lint with ESLint
 - `npm run typecheck` – TypeScript check
 - `npm run test:e2e` – run Playwright tests

@@ -31,5 +31,11 @@
     }
   },
   "postCreateCommand": "npm install && npx playwright install",
+  "postStartCommand": "bash -lc 'if [ ! -f .next/BUILD_ID ]; then echo Starting dev server; npm run dev & fi'",
+  "forwardPorts": [3000, 9323],
+  "remoteEnv": {
+    "WEB_PORT": "3000",
+    "PWDEBUG_PORT": "9323"
+  },
   "remoteUser": "node"
 }
