@@ -49,9 +49,10 @@ function ensureAvailable(port) {
     try {
       await ensureAvailable(requestedPort);
       chosen = requestedPort;
-    } catch (e) {
+    } catch (err) {
       console.error(
-        `[dev] Requested port ${requestedPort} is not available. Stop the process using it or choose another port.`
+        `[dev] Requested port ${requestedPort} is not available. Stop the process using it or choose another port.`,
+        err && err.message ? `Error: ${err.message}` : ""
       );
       process.exit(1);
     }
