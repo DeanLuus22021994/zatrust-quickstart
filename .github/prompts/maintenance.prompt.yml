@@ -1,43 +1,277 @@
 # Maintenance & Dependency Automation Prompt
-# Purpose: Guidance specific to dependency update PR handling.
-# SRP: Only maintenance & dependency update strategy.
+# Purpose: Comprehensive dependency update and maintenance automation strategy
+# SRP: Dependency lifecycle management, security updates, and maintenance workflows
 
-version: 1
+version: 2
 kind: maintenance
+scope: dependency-management
 
+# Enhanced update strategy configuration
 updates:
   sources:
-    - dependabot
-    - renovate
+    primary: renovate  # Primary dependency manager
+    security: dependabot  # Security-focused updates only
+    
   strategy:
-    minorPatch: automerge
-    majorCore: manualReview (react, next)
-    security: fastTrack
+    minorPatch: 
+      action: automerge
+      stabilityDays: 1
+      conditions: ["ci-passing", "security-clean"]
+      
+    majorCore: 
+      action: manualReview
+      packages: ["react", "react-dom", "next", "typescript"]
+      approvers: ["@DeanLuus22021994"]
+      stabilityDays: 3
+      
+    security: 
+      action: fastTrack
+      stabilityDays: 0
+      priority: critical
+      schedule: "at any time"
+      
   grouping:
-    eslintStack: minorPatchAutomerge
-    playwrightStack: minorPatchAutomergeAfter1Day
+    eslintStack: 
+      action: minorPatchAutomerge
+      packages: ["eslint", "@typescript-eslint/*", "eslint-config-next"]
+      stabilityDays: 1
+      
+    playwrightStack: 
+      action: minorPatchAutomerge
+      packages: ["@playwright/test"]
+      stabilityDays: 1
+      
+    typesPackages:
+      action: minorPatchAutomerge  
+      packages: ["@types/*"]
+      stabilityDays: 1
+      
+    devDependencies:
+      action: minorPatchAutomerge
+      excludes: ["react", "next", "typescript"]
+      stabilityDays: 1
 
+# Comprehensive validation pipeline
 validation:
   requiredScripts:
-    - npm run lint
-    - npm run typecheck
-    - npm run test:e2e
+    pre: 
+      - npm run doctor
+      - npm audit --audit-level=high
+    
+    core:
+      - npm run lint
+      - npm run typecheck
+      - npm run build
+      
+    testing:
+      - npm run test:e2e
+      
+    analysis:
+      - npm run analyze
+      
+  qualityGates:
+    security:
+      - noHighVulnerabilities: true
+      - securityAuditPassing: true
+      
+    performance:  
+      - bundleSizeIncrease: "<10%"
+      - buildTimeIncrease: "<20%"
+      
+    compatibility:
+      - nodeVersionsSupported: ["20.x", "22.x"]
+      - backwardsCompatible: true
+      
   notes:
-    - All required scripts must pass before auto-merge or manual approval.
+    - "All validation scripts must pass before auto-merge or manual approval"
+    - "Security updates bypass normal stability periods"
+    - "Bundle size increases >10% require manual review"
+    - "Breaking changes always require manual approval"
 
+# Enhanced PR management
 pr:
-  bodyTemplate: |
-    Dependency Update
-    Source: {SOURCE}
-    Packages: {PACKAGES}
+  templates:
+    security:
+      title: "🔒 Security Update: {PACKAGES}"
+      body: |
+        ## 🛡️ Security Dependency Update
+        
+        **Priority:** CRITICAL  
+        **Source:** {SOURCE}  
+        **Packages:** {PACKAGES}  
+        **Vulnerabilities Fixed:** {VULNERABILITIES}
+        
+        ### 🔍 Security Analysis
+        {SECURITY_DETAILS}
+        
+        ### ✅ Automated Validation
+        - [x] Security audit clean
+        - [x] No high vulnerabilities  
+        - [x] All tests passing
+        - [x] Build successful
+        
+        ### 🚀 Auto-merge Eligible
+        This security update will be auto-merged once CI passes.
+        
+    regular:
+      title: "{UPDATE_TYPE}: {PACKAGES}"
+      body: |
+        ## 📦 Dependency Update
+        
+        **Source:** {SOURCE}  
+        **Type:** {UPDATE_TYPE}  
+        **Packages:** {PACKAGES}  
+        **Version Changes:** {VERSION_CHANGES}
+        
+        ### 📋 Validation Checklist
+        - [ ] Lint passing
+        - [ ] Type check passing  
+        - [ ] E2E tests passing
+        - [ ] Build successful
+        - [ ] Bundle size acceptable
+        - [ ] Security audit clean
+        
+        ### 🔄 Auto-merge Status
+        {AUTOMERGE_STATUS}
+        
+        ### 📊 Impact Assessment
+        - **Breaking Changes:** {BREAKING_CHANGES}
+        - **Bundle Impact:** {BUNDLE_IMPACT}
+        - **Performance:** {PERFORMANCE_IMPACT}
+        
+    major:
+      title: "⬆️ MAJOR: {PACKAGES} - Manual Review Required"
+      body: |
+        ## 🚨 Major Version Update - Review Required
+        
+        **Packages:** {PACKAGES}  
+        **Version Changes:** {VERSION_CHANGES}  
+        **Breaking Changes:** {BREAKING_CHANGES}
+        
+        ### ⚠️ Manual Review Required
+        This major update requires manual review and approval.
+        
+        ### 🔍 Review Checklist
+        - [ ] Review breaking changes documentation
+        - [ ] Test critical user flows manually
+        - [ ] Verify backwards compatibility
+        - [ ] Update documentation if needed
+        - [ ] Consider migration timeline
+        
+        ### 📚 Resources
+        - [Release Notes]({RELEASE_NOTES})
+        - [Migration Guide]({MIGRATION_GUIDE})
+        - [Breaking Changes]({BREAKING_CHANGES_URL})
 
-    Validation Checklist
-    - [ ] Lint
-    - [ ] Typecheck
-    - [ ] E2E
-
+# Risk assessment and escalation
 risk:
   escalationCriteria:
-    - major version of next / react
-    - build failure introduced
-    - new high severity vulnerability
+    immediate:
+      - "Critical security vulnerability"
+      - "Build failure introduced"
+      - "Major test suite regression"
+      
+    review:
+      - "Major version of next/react/typescript"
+      - "Bundle size increase >20%"
+      - "New high severity vulnerability introduced"
+      - "Breaking API changes detected"
+      
+    monitoring:
+      - "Minor dependency conflicts"
+      - "Performance regression <10%"
+      - "New warnings introduced"
+      
+  responseActions:
+    immediate:
+      - "Create high-priority issue"
+      - "Notify maintainers"
+      - "Block auto-merge"
+      - "Rollback if deployed"
+      
+    review:
+      - "Require manual approval"
+      - "Extended testing period"
+      - "Stakeholder notification"
+      
+    monitoring:
+      - "Log for review"
+      - "Include in weekly summary"
+
+# Enhanced scheduling and coordination
+scheduling:
+  timezone: "UTC"
+  
+  regular:
+    updates: "before 5am on monday"
+    lockfile: "before 5am on monday"
+    
+  security:
+    updates: "at any time"
+    priority: "immediate"
+    
+  coordination:
+    avoidHours: ["friday 5pm - monday 8am"]
+    batchSimilar: true
+    respectStability: true
+
+# Rollback and recovery procedures
+rollback:
+  automatic:
+    triggers:
+      - "Build failure after merge"
+      - "Critical test regression"
+      - "Security scan failure"
+      
+    actions:
+      - "Create rollback PR"
+      - "Notify team"
+      - "Create incident issue"
+      
+  manual:
+    procedure: |
+      1. Identify problematic merge
+      2. Create revert commit
+      3. Test revert thoroughly
+      4. Deploy with expedited review
+      5. Post-mortem analysis
+      
+  validation:
+    required: ["ci-passing", "security-clean"]
+    timeout: "30 minutes"
+
+# Metrics and monitoring
+metrics:
+  tracking:
+    - updateFrequency
+    - autoMergeSuccessRate
+    - securityResponseTime
+    - buildFailureRate
+    - rollbackFrequency
+    
+  targets:
+    autoMergeSuccessRate: ">95%"
+    securityResponseTime: "<4 hours"
+    buildFailureRate: "<5%"
+    
+  reporting:
+    frequency: "weekly"
+    includeeTrends: true
+    stakeholderNotification: true
+
+# Integration with other tools
+integrations:
+  renovate:
+    config: ".github/renovate.json"
+    dashboard: "enabled"
+    semanticCommits: true
+    
+  dependabot:
+    config: ".github/dependabot.yml"
+    securityOnly: true
+    autoMerge: true
+    
+  github:
+    autoMerge: true
+    requiredChecks: ["quality", "security"]
+    protectedBranches: ["main"]

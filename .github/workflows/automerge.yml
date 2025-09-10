@@ -5,14 +5,10 @@ on:
     types: [opened, synchronize, reopened, labeled, ready_for_review]
   workflow_dispatch:
 
-# Least privilege at top-level; job will further restrict if needed.
+# Strict least privilege permissions
 permissions:
-  contents: write # needed for auto-merge & branch updates
-  pull-requests: write # finalize merges / enable auto-merge
-  checks: read
-  issues: write # comment on PR (issue API)
-  # security-events not needed
-
+  contents: read
+  
 concurrency:
   group: automerge-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
@@ -29,16 +25,58 @@ jobs:
       (github.event.pull_request.user.login == 'dependabot[bot]' ||
        github.event.pull_request.user.login == 'renovate[bot]')
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: read
+      issues: write
     steps:
-      - name: Log metadata
+      - name: Validate PR metadata
         uses: actions/github-script@v7
         with:
           script: |
             const pr = context.payload.pull_request;
             core.info(`Evaluating dependency PR #${pr.number}`);
-            core.info(`From: ${pr.user.login}  Head: ${pr.head.ref}  Base:${pr.base.ref}`);
+            core.info(`Author: ${pr.user.login}`);
+            core.info(`Head: ${pr.head.ref} -> Base: ${pr.base.ref}`);
             core.info(`Labels: ${(pr.labels||[]).map(l=>l.name).join(', ')}`);
+            core.info(`Files changed: ${pr.changed_files}`);
+            
+            // Additional safety checks
+            if (pr.changed_files > 10) {
+              core.setFailed(`Too many files changed (${pr.changed_files}). Manual review required.`);
+            }
+            
+            const title = pr.title.toLowerCase();
+            const dangerousPatterns = ['major', 'breaking', 'security'];
+            const hasDangerousKeywords = dangerousPatterns.some(pattern => title.includes(pattern));
+            
+            if (hasDangerousKeywords) {
+              core.warning(`PR title contains potentially dangerous keywords. Consider manual review.`);
+            }
+
+      - name: Wait for required checks
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: checks } = await github.rest.checks.listForRef({
+              ...context.repo,
+              ref: context.payload.pull_request.head.sha
+            });
+            
+            const requiredChecks = ['quality', 'dependency-review'];
+            const pendingChecks = checks.check_runs.filter(check => 
+              requiredChecks.includes(check.name) && 
+              ['queued', 'in_progress'].includes(check.status)
+            );
+            
+            if (pendingChecks.length > 0) {
+              core.info(`Waiting for checks to complete: ${pendingChecks.map(c => c.name).join(', ')}`);
+              // Wait a bit for checks to complete
+              await new Promise(resolve => setTimeout(resolve, 30000));
+            }
+
       - name: Auto-merge minor/patch dependency PRs
         uses: fastify/github-action-merge-dependabot@v3
         with:
@@ -47,23 +85,42 @@ jobs:
           target: minor
           allow-merge-commit: false
           use-github-auto-merge: true
+          
       - name: Comment merge status
         if: always()
         uses: actions/github-script@v7
         with:
           script: |
             const pr = context.payload.pull_request;
-            core.info(`Auto-merge evaluation complete for #${pr.number}`);
-            if (!pr.merged) {
-              const existing = await github.rest.issues.listComments({
+            const conclusion = '${{ job.status }}';
+            
+            let message = `🤖 **Auto-merge evaluation completed**\n\n`;
+            message += `- Status: ${conclusion}\n`;
+            message += `- PR: #${pr.number}\n`;
+            message += `- Author: ${pr.user.login}\n\n`;
+            
+            if (conclusion === 'success') {
+              message += `✅ PR meets auto-merge criteria (minor/patch + proper labels)\n`;
+              message += `GitHub auto-merge will complete once all required checks pass.`;
+            } else {
+              message += `⚠️ Auto-merge conditions not met. Manual review may be required.\n`;
+              message += `Check the workflow logs for details.`;
+            }
+            
+            // Only comment if no similar comment exists
+            const { data: comments } = await github.rest.issues.listComments({
+              ...context.repo,
+              issue_number: pr.number
+            });
+            
+            const hasAutoMergeComment = comments.some(c => 
+              c.body?.includes('Auto-merge evaluation completed')
+            );
+            
+            if (!hasAutoMergeComment) {
+              await github.rest.issues.createComment({
                 ...context.repo,
-                issue_number: pr.number
+                issue_number: pr.number,
+                body: message
               });
-              if (!existing.data.find(c => c.body?.includes('Auto-merge workflow evaluated.'))) {
-                await github.rest.issues.createComment({
-                  ...context.repo,
-                  issue_number: pr.number,
-                  body: 'Auto-merge workflow evaluated. If conditions (minor/patch + labels) are satisfied, GitHub auto-merge will finalize once checks pass.'
-                });
-              }
             }

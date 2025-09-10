@@ -1,102 +1,237 @@
 # Automation Orchestration Prompt (Workflow Failures)
-# Purpose: Standard remediation guidance for failed CI-related workflows.
-# SRP: Only describes how to triage and fix workflow failures.
+# Purpose: Comprehensive remediation guidance for CI/CD workflow failures
+# SRP: Standardized automation failure triage, diagnosis, and resolution
 
-version: 1
+version: 2
 kind: automation
+scope: workflow-failures
 
+# Enhanced monitoring for modernized workflows
 workflows:
   monitored:
     - name: CI
       label: ci-failure
+      priority: high
       remediation:
         scripts:
           - npm run quality:all
+          - npm run analyze
+        validation:
+          - npm run doctor
+          - npm run lint
+          - npm run typecheck
+          - npm run test:e2e
         notes:
-          - Ensure both Node LTS and current matrix pass.
-          - Investigate first failing job first (avoid chasing cascade errors).
-    - name: ShellCheck
+          - "Matrix build failure: Focus on first failing Node version to avoid cascade errors"
+          - "E2E test failures: Check Playwright browser installation and test artifacts"
+          - "Bundle analysis: Review bundle-analysis artifacts for size regressions"
+          - "Security audit: Address high+ severity vulnerabilities immediately"
+          
+    - name: ShellCheck Analysis
       label: shellcheck-failure
+      priority: medium
       remediation:
         scripts:
           - bash -n .devcontainer/scripts/*.sh
-          - shellcheck .devcontainer/scripts/*.sh
+          - shellcheck --version
+          - shellcheck --format=gcc --severity=error .devcontainer/scripts/*.sh
+        validation:
+          - find . -name "*.sh" -exec bash -n {} \;
         notes:
-          - Address highest severity (error) findings first.
-          - Fix root cause before style nits.
-    - name: CodeQL
+          - "Error priority: Fix SC2xxx error codes before warnings"
+          - "Common fixes: Add quotes, use [[ ]], set -euo pipefail"
+          - "Download SARIF artifact for precise issue locations"
+          
+    - name: CodeQL Security Analysis
       label: codeql-failure
+      priority: critical
       remediation:
         scripts:
-          - npm install
+          - npm ci --no-audit --no-fund
           - npm run build
+        validation:
+          - npm run typecheck
+          - npm run lint
         notes:
-          - Review SARIF alerts in Security tab.
-          - Confirm no sensitive data leaks / new sinks introduced.
+          - "Security findings: Review Security tab for SARIF results"
+          - "High priority: Fix any data flow or injection vulnerabilities"
+          - "False positives: Use CodeQL suppression comments sparingly"
+          - "SARIF upload: Ensure results are properly categorized"
 
+    - name: Auto-merge Dependencies
+      label: automerge-failure
+      priority: medium
+      remediation:
+        scripts:
+          - npm run quality:all
+        validation:
+          - npm audit --audit-level=high
+          - npm outdated
+        notes:
+          - "Large PR check: Review if >10 files changed requires manual review"
+          - "Security patches: Ensure vulnerability fixes are properly tested"
+          - "Major updates: Verify breaking changes don't affect functionality"
+
+# Enhanced issue management
 issues:
   create:
     reuseExisting: true
     aggregateSimilar: true
+    maxOpenIssues: 10
   template:
-    title: "{WORKFLOW} Failure on {REF}"
-    labels: ["automation", "{LABEL}"]
+    title: "{WORKFLOW} Failure - {DATE}"
+    labels: ["automation", "{LABEL}", "priority-{PRIORITY}"]
     body: |
-      ## Failure Summary
-      - Workflow: {WORKFLOW}
-      - Ref: {REF}
-      - Run URL: {RUN_URL}
+      ## 🚨 Automation Failure Report
+      
+      **Workflow:** {WORKFLOW}  
+      **Branch:** {REF}  
+      **Run URL:** {RUN_URL}  
+      **Priority:** {PRIORITY}  
+      **Timestamp:** {TIMESTAMP}
+      
+      ## 🔍 Investigation Steps
+      1. **Download artifacts** from the failed workflow run
+      2. **Review workflow logs** for the first point of failure
+      3. **Reproduce locally** using the remediation scripts below
+      4. **Identify root cause** (dependency issue, code change, environment)
+      
+      ## 🛠️ Remediation Scripts
+      ```bash
+      {REMEDIATION_SCRIPTS}
+      ```
+      
+      ## ✅ Validation Checklist
+      ```bash
+      {VALIDATION_SCRIPTS}
+      ```
+      
+      ## 📋 Definition of Done
+      - [ ] All CI workflows pass (green status)
+      - [ ] No new lint/type errors introduced
+      - [ ] E2E test suite completes successfully
+      - [ ] Security posture maintained (no new high vulnerabilities)
+      - [ ] Bundle size within acceptable limits
+      - [ ] All artifacts upload successfully
+      
+      ## 📚 Reference Documentation
+      - [Copilot Instructions](.github/copilot-instructions.md)
+      - [Automation Prompts](.github/prompts/)
+      - [Package.json Scripts](package.json)
+      - [Workflow Files](.github/workflows/)
+      
+      ## 🔗 Related Links
+      - Security findings: [Security Tab]({SECURITY_URL})
+      - Dependency dashboard: [Renovate Dashboard]({RENOVATE_URL})
+      - Bundle analysis: [Workflow Artifacts]({ARTIFACTS_URL})
 
-      ## Expected Action
-      1. Inspect failing job logs.
-      2. Reproduce locally with remediation script(s).
-      3. Apply minimal targeted fix (respect DRY & SOLID, server components by default).
-      4. Run: `npm run quality:all` until green.
-      5. Commit with conventional prefix (fix:, chore:, etc.).
-
-      ## Definition of Done
-      - All GitHub Actions workflows pass.
-      - No new lint/type errors.
-      - E2E suite green.
-      - Security posture unchanged (no new high vulns).
-
-      ## Reference
-      - .github/copilot-instructions.md
-      - package.json scripts
-
+# Enhanced Copilot configuration
 copilot:
   assign:
+    automatic: true
+    conditions:
+      - workflow_failure
+      - security_alert
+      - dependency_conflict
     users:
-      - github-actions[bot]
-      - dependabot[bot]
-      - renovate[bot]
+      - "github-actions[bot]"
+      - "renovate[bot]"
+  
   pr:
     conventionalCommits: true
-    body: |
-      AUTO-GENERATED PR
-      Issue: #{ISSUE_NUMBER}
-      Workflow: {WORKFLOW}
-
-      ### Summary
+    autolink: true
+    template: |
+      ## 🤖 Auto-Generated Fix
+      
+      **Issue:** #{ISSUE_NUMBER}  
+      **Workflow:** {WORKFLOW}  
+      **Root Cause:** {ROOT_CAUSE}
+      
+      ### 📝 Summary
       {SUMMARY}
+      
+      ### 🔧 Changes Made
+      {CHANGES}
+      
+      ### ✅ Validation Results
+      - [x] Lint check passed
+      - [x] Type check passed  
+      - [x] E2E tests passed
+      - [x] Build successful
+      - [x] Security scan clean
+      
+      ### 📊 Impact Assessment
+      - **Performance:** {PERFORMANCE_IMPACT}
+      - **Security:** {SECURITY_IMPACT}  
+      - **Dependencies:** {DEPENDENCY_IMPACT}
+      
+      ### 🧪 Testing Notes
+      {TESTING_NOTES}
+      
+      ---
+      *Generated by GitHub Copilot automation*
 
-      ### Validation
-      - [x] Lint / Typecheck
-      - [x] E2E
-      - [x] Build
-
-      ### Notes
-      {NOTES}
-
+# Enhanced policy enforcement
 policy:
   coding:
     strictTypes: true
     serverComponentsDefault: true
     sanitizeRedirects: true
+    noGlobalState: true
+    conventionalCommits: true
+    
   dependencies:
     autoMergeMinorPatch: true
     reviewMajor: true
+    securityUpdatesImmediate: true
+    stabilityDays: 1
+    
+  security:
+    requireScanPassing: true
+    blockHighVulnerabilities: true
+    sarfUploadRequired: true
+    
+  quality:
+    requireLintPassing: true
+    requireTypeCheck: true
+    requireE2EPassing: true
+    maxBundleSize: "500KB"
 
+# Advanced security configuration
 security:
-  disallowSecretsInRepo: true
-  scanning: [codeql, npm-audit]
+  scanning:
+    - codeql
+    - npm-audit
+    - shellcheck
+    - sarif-upload
+  vulnerabilities:
+    autofix: true
+    notifications: true
+    severity: "high"
+  secrets:
+    prevention: true
+    scanning: true
+    
+# Performance monitoring
+performance:
+  monitoring:
+    bundleSize: true
+    buildTime: true
+    testDuration: true
+    
+  thresholds:
+    bundleSizeIncrease: "10%"
+    buildTimeIncrease: "20%"
+    testTimeoutDefault: "45s"
+
+# Notification configuration
+notifications:
+  channels:
+    - github-issues
+    - workflow-summary
+    - security-alerts
+    
+  conditions:
+    critical: ["security-findings", "build-failure"]
+    warning: ["test-flaky", "bundle-size-increase"]
+    info: ["dependency-updates", "successful-deployment"]
