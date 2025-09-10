@@ -40,5 +40,5 @@ services:
       - GITHUB_REPOSITORY=DeanLuus22021994/zatrust-quickstart
       - GH_RUNNER_LABELS=self-hosted,compose,linux,x64
       - ENABLE_GH_RUNNER=true
-    entrypoint: ["bash", "-lc", "bash .github/scripts/start-runner.sh"]
+    entrypoint: ["bash", "-lc", "bash .devcontainer/scripts/start-runner.sh"]
     restart: unless-stopped
