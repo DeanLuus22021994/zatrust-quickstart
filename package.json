@@ -21,6 +21,7 @@
     "deps:update:all": "npx npm-check-updates -u && npm install",
     "quality:all": "npm run lint && npm run typecheck && npm run test:e2e",
     "provision": "bash .devcontainer/scripts/provision.sh",
+    "playwright:provision": "bash .devcontainer/scripts/playwright-provision.sh",
     "analyze": "ANALYZE=true next build"
   },
   "dependencies": {

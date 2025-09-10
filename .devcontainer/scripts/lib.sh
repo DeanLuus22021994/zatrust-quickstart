@@ -127,12 +127,18 @@ install_playwright() {
     log "No tests/ directory -> skipping Playwright install"
     return 0
   fi
-  local cache_dir="/home/node/.cache/ms-playwright"
-  if [ ! -d "$cache_dir" ]; then
-    log "Installing Playwright browsers (chromium)"
-    npx --yes playwright install --with-deps chromium
+  local script=".devcontainer/scripts/playwright-provision.sh"
+  if [ -f "$script" ]; then
+    log "Delegating Playwright provisioning to $script"
+    bash "$script" || log "Playwright provisioning script exited non-zero"
   else
-    log "Playwright cache present"
+    local cache_dir="/home/node/.cache/ms-playwright"
+    if [ ! -d "$cache_dir" ]; then
+      log "Installing Playwright browsers (chromium)"
+      npx --yes playwright install --with-deps chromium
+    else
+      log "Playwright cache present"
+    fi
   fi
 }
 
