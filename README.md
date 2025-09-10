@@ -38,6 +38,11 @@ Auth note
 
 This starter uses a minimal cookie-based demo auth to keep dependencies low. For production, replace with NextAuth or your IdP. E2E tests cover the happy path.
 
+## Documentation
+
+- **[Technical Debt Analysis](./DEVELOPMENT_DEBT.md)** - Comprehensive analysis of development debt with RAG indicators and improvement roadmap
+- **[Technical Debt Summary](./docs/TECHNICAL_DEBT_SUMMARY.md)** - Quick reference for identified issues and priorities
+
 Repo guidance for GitHub Copilot
 
 See `.github/copilot-instructions.md` for conventions and architectural guidance to keep changes DRY, SRP, SOLID, modular, and testable.
