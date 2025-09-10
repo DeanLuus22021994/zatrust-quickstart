@@ -24,7 +24,8 @@
       "matchUpdateTypes": ["major"],
       "stabilityDays": 3,
       "prCreation": "not-pending",
-      "dependencyDashboardApproval": true
+      "dependencyDashboardApproval": true,
+      "automerge": false
     },
     {
       "matchPackagePatterns": [
@@ -62,5 +63,6 @@
   "semanticCommits": "enabled",
   "ignorePaths": ["**/test-results/**"],
   "rollbackPrs": true,
-  "rollbackPrsLimit": 3
+  "rollbackPrsLimit": 3,
+  "automergeType": "pr"
 }

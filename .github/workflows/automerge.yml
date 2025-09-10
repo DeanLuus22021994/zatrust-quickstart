@@ -1,0 +1,26 @@
+name: Auto-merge Dependencies
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  automerge:
+    if: >-
+      contains(github.event.pull_request.labels.*.name, 'dependencies') ||
+      contains(github.event.pull_request.labels.*.name, 'renovate')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto-merge minor/patch dependency PRs
+        uses: fastify/github-action-merge-dependabot@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          merge-method: squash
+          target: minor
+          allow-merge-commit: false
+          use-github-auto-merge: true

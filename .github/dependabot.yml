@@ -18,6 +18,7 @@ updates:
       minor-and-patch:
         patterns: ["*"]
         update-types: ["minor", "patch"]
+        automerge: true
       major-react-next:
         patterns: ["react", "react-dom", "next"]
         update-types: ["major"]
@@ -39,6 +40,7 @@ updates:
     schedule:
       interval: "daily"
     security-updates-only: true
+    automerge: true
     commit-message:
       prefix: "deps-sec"
     labels: ["security", "dependencies"]
