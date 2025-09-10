@@ -44,7 +44,7 @@ references:
   docs:
     - .github/copilot-instructions.md
   automationPrompts:
-    - .github/instructions/automation.prompt.yml
+    - .github/prompts/automation.prompt.yml
   related:
-    - .github/instructions/maintenance.prompt.yml
-    - .github/instructions/policies.prompt.yml
+    - .github/prompts/maintenance.prompt.yml
+    - .github/prompts/policies.prompt.yml

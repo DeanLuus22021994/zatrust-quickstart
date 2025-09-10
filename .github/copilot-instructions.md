@@ -88,8 +88,8 @@ src/
 
 - Automation: `.github/prompts/automation.prompt.yml`
 - Maintenance: `.github/prompts/maintenance.prompt.yml`
-- Policies: `.github/instructions/policies.prompt.yml`
-- Context: `.github/instructions/context.prompt.yml`
+- Policies: `.github/prompts/policies.prompt.yml`
+- Context: `.github/prompts/context.prompt.yml`
 
 ## Copilot Maintenance Guidance
 
