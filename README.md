@@ -45,3 +45,35 @@ See `.github/copilot-instructions.md` for conventions and architectural guidance
 Permissions / node_modules note
 
 Previously a named Docker volume was used for `node_modules`. This caused `EACCES` during `npm install` in the Dev Container because the volume root was owned by root. The setup now keeps `node_modules` inside the project bind mount for simplicity. If you need to isolate Linux-only dependencies from the host (e.g. on Windows), you can reintroduce a named volume and add a root-owned chown step before installing dependencies.
+
+## Dev Container Provisioning & Environment Variables
+
+Provisioning is modularized under `.devcontainer/scripts/`:
+
+- `lib.sh` – Shared functions (git identity, safe.directory, dependency install, Playwright, runner)
+- `provision.sh` – Single entrypoint invoked via `postCreateCommand` and available manually: `npm run provision`
+- `start-runner.sh` – Self-hosted GitHub Actions runner bootstrap (idempotent, supports version pin + SHA256 verification)
+
+Key environment variables (override via Dev Container `containerEnv`, local export, or workflow vars):
+
+| Variable                       | Purpose                                                         | Default                              |
+| ------------------------------ | --------------------------------------------------------------- | ------------------------------------ |
+| `GIT_USER_NAME`                | Configure global git user.name inside container                 | `DeanLuus22021994`                   |
+| `GIT_USER_EMAIL`               | Configure global git user.email inside container                | `dean.luus22021994@gmail.com`        |
+| `ENABLE_GH_RUNNER`             | If `true`, attempts to start self-hosted runner on provisioning | `false`                              |
+| `GITHUB_PERSONAL_ACCESS_TOKEN` | PAT with repo self-hosted runner registration permissions       | (unset)                              |
+| `GITHUB_REPOSITORY`            | Owner/repo slug for runner registration                         | Detected / set in devcontainer.json  |
+| `GH_RUNNER_LABELS`             | Comma-separated labels applied to the runner                    | `self-hosted,devcontainer,linux,x64` |
+| `GITHUB_RUNNER_VERSION`        | Pin runner version (e.g. `v2.320.0`) or `latest`                | `latest`                             |
+
+Security note: If pinning `GITHUB_RUNNER_VERSION`, the download is verified with published SHA256. For `latest`, the script validates SHA256 when the upstream `.sha256` file is available.
+
+Playwright installation is conditional: if the `tests/` directory is absent, browser binaries are skipped to speed up provisioning.
+
+Re-run provisioning manually:
+
+```bash
+npm run provision
+```
+
+This is safe to run repeatedly (idempotent operations).
