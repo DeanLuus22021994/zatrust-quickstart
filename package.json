@@ -8,8 +8,8 @@
     "dev:fixed": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p ${PORT:-3000}",
-    "lint": "eslint . --max-warnings=0",
-    "lint:fix": "eslint . --fix",
+    "lint": "NEXT_RUNTIME_ESLINT=1 eslint . --max-warnings=0 --ext .js,.ts,.tsx",
+    "lint:fix": "NEXT_RUNTIME_ESLINT=1 eslint . --fix --ext .js,.ts,.tsx",
     "format": "prettier -w .",
     "typecheck": "tsc --noEmit",
     "doctor": "node -e \"['eslint','typescript','@playwright/test'].forEach(p=>{try{require.resolve(p);}catch(e){console.error('Missing',p);process.exitCode=1;}})\"",
@@ -29,17 +29,17 @@
     "react-dom": "^19.1.1"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^15.5.2",
+    "@next/eslint-plugin-next": "^15.5.2",
     "@playwright/test": "^1.48.2",
     "@types/node": "^24.3.1",
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9",
-    "@next/bundle-analyzer": "^15.5.2",
     "eslint": "^9.35.0",
-    "eslint-config-next": "^15.5.2",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-unused-imports": "^4.1.4",
+    "npm-check-updates": "^18.1.0",
     "prettier": "^3.3.3",
-    "typescript": "^5.6.2",
-    "npm-check-updates": "^18.1.0"
+    "typescript": "^5.6.2"
   }
 }
