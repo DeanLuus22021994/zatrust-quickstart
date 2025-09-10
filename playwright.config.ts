@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 // Ensure config loads even if local TypeScript/ESLint resolution has issues.
 // The baseURL port (3001) aligns with webServer command below.
+const useProd = !!process.env.PLAYWRIGHT_PROD;
 
 export default defineConfig({
   testDir: "./tests",
@@ -19,10 +20,17 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
-    command: "npm run dev -- -p 3001",
-    port: 3001,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-  },
+  webServer: useProd
+    ? {
+        command: "npm run build && npm run start -p 3001",
+        port: 3001,
+        reuseExistingServer: false,
+        timeout: 180 * 1000,
+      }
+    : {
+        command: "npm run dev -- -p 3001",
+        port: 3001,
+        reuseExistingServer: !process.env.CI,
+        timeout: 120 * 1000,
+      },
 });
