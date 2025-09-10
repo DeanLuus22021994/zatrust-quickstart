@@ -4,6 +4,8 @@ set -euo pipefail
 
 log() { printf '[devcontainer] %s\n' "$*"; }
 
+# ---------- Git Configuration ----------
+
 ensure_git_identity() {
   local name email
   name="${GIT_USER_NAME:-DeanLuus22021994}"
