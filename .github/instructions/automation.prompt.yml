@@ -23,12 +23,12 @@ workflows:
           - shellcheck .devcontainer/scripts/*.sh
         notes:
           - Address highest severity (error) findings first.
-    - name: CodeQL (future)
+    - name: CodeQL
       label: codeql-failure
       remediation:
         scripts:
           - npm install
-          - npm run build || true
+          - npm run build
         notes:
           - Review SARIF alerts in Security tab.
 
