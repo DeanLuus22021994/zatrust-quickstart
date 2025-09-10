@@ -1,6 +1,28 @@
 import { expect, test } from "@playwright/test";
 
-// Basic E2E flow covering landing, auth, and dashboard plus edge permutations
+import type { Page } from "@playwright/test";
+
+// Consolidated E2E flow covering landing, auth, dashboard, and profile plus edge permutations.
+// NOTE: Profile tests were merged from former profile.spec.ts (now deleted) to keep
+// a single comprehensive auth-focused spec per user request, despite guideline preference
+// for one concern per file.
+
+async function login(
+  page: Page,
+  username: string,
+  from: string = "/dashboard"
+): Promise<void> {
+  if (from && from !== "/dashboard") {
+    await page.goto(`/login?from=${encodeURIComponent(from)}`);
+  } else {
+    await page.goto("/login");
+  }
+  await page.getByLabel("Username").fill(username);
+  await page.getByRole("button", { name: "Login" }).click();
+  await expect(page).toHaveURL(
+    new RegExp(from.replace(/[-/\\?+^$.*]/g, (m) => `\\${m}`))
+  ); // ensure landed
+}
 
 test("landing page shows CTA to login", async ({ page }) => {
   await page.goto("/");
@@ -126,5 +148,81 @@ test.describe("authentication permutations", () => {
     await expect(page).toHaveURL(/\/$/);
     await page.goto("/dashboard");
     await expect(page).toHaveURL(/\/login/);
+  });
+});
+
+// Profile route coverage
+test.describe("profile route (protected)", () => {
+  test("unauthenticated user visiting /profile is redirected to login", async ({
+    page,
+  }) => {
+    await page.goto("/profile");
+    await expect(page).toHaveURL(/\/login\?from=%2Fprofile/);
+    await expect(page.getByRole("heading", { name: "Login" })).toBeVisible();
+  });
+
+  test("authenticated user can view profile page after login redirect", async ({
+    page,
+  }) => {
+    await page.goto("/login?from=/profile");
+    await page.getByLabel("Username").fill("profUser");
+    await page.getByRole("button", { name: "Login" }).click();
+    await expect(page).toHaveURL(/\/profile/);
+    await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
+    await expect(page.getByText("User: profUser")).toBeVisible();
+  });
+
+  test("logout then visiting /profile redirects to login", async ({ page }) => {
+    await login(page, "afterProfileLogout", "/profile");
+    await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
+    // Logout via dashboard path flow not present on profile; navigate dashboard to logout
+    await page.goto("/dashboard");
+    await page.getByRole("button", { name: "Logout" }).click();
+    await expect(page).toHaveURL(/\/$/);
+    await page.goto("/profile");
+    await expect(page).toHaveURL(/\/login\?from=%2Fprofile/);
+  });
+});
+
+// Additional redirect sanitization & cookie attribute edge cases
+test.describe("redirect sanitization edge cases", () => {
+  test("protocol-relative from value is sanitized to /dashboard", async ({
+    page,
+  }) => {
+    await page.goto("/login?from=//malicious.example.com");
+    await page.getByLabel("Username").fill("protoRelUser");
+    await page.getByRole("button", { name: "Login" }).click();
+    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page.getByText("Welcome, protoRelUser")).toBeVisible();
+  });
+
+  test("invalid character path falls back to /dashboard", async ({ page }) => {
+    // Angle brackets are disallowed by sanitizeRedirectPath regex
+    await page.goto("/login?from=/dash<>board");
+    await page.getByLabel("Username").fill("invalidPathUser");
+    await page.getByRole("button", { name: "Login" }).click();
+    await expect(page).toHaveURL(/\/dashboard/);
+  });
+
+  test("query string in from path is preserved", async ({ page }) => {
+    await page.goto("/login?from=/dashboard%3Ftab%3D1");
+    await page.getByLabel("Username").fill("queryUser");
+    await page.getByRole("button", { name: "Login" }).click();
+    await expect(page).toHaveURL(/\/dashboard\?tab=1/);
+    await expect(page.getByText("Welcome, queryUser")).toBeVisible();
+  });
+});
+
+test.describe("cookie attributes", () => {
+  test("login sets httpOnly, sameSite=lax cookie", async ({ page }) => {
+    await login(page, "cookieAttrUser");
+    const cookies = await page.context().cookies();
+    const demo = cookies.find((c) => c.name === "demo_user");
+    expect(demo).toBeTruthy();
+    expect(demo?.httpOnly).toBe(true);
+    expect(demo?.sameSite).toBe("Lax");
+    // HttpOnly cookie should not be accessible via document.cookie
+    const docCookie = await page.evaluate(() => document.cookie);
+    expect(docCookie.includes("demo_user")).toBe(false);
   });
 });
