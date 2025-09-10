@@ -1,0 +1,32 @@
+# Policy & Standards Prompt
+# Purpose: Centralize coding, dependency and security policies.
+# SRP: Only enforceable policy declarations.
+
+version: 1
+kind: policy
+
+coding:
+  strictTypes: true
+  preferServerComponents: true
+  prohibitGlobalState: true
+  enforceSanitizedRedirects: true
+  testCoverageMinimum: 1  # Placeholder (no coverage tooling yet) ensures presence if added later
+
+dependencies:
+  autoMergeMinorPatch: true
+  requireReviewForMajor: true
+  lockfileMaintenanceWeekly: true
+
+security:
+  codeScanning: codeql
+  dependencyScanning: npm-audit
+  secretLeakPrevention: true
+
+review:
+  conventionalCommits: true
+  smallFocusedPRs: true
+  requirePassingCI: true
+
+release:
+  taggingStrategy: semver
+  changelog: automatedFuture

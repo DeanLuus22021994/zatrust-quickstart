@@ -114,7 +114,7 @@ jobs:
               `Ref: ${process.env.GITHUB_REF}`,
               'Please investigate failing job logs.',
               '',
-              'Copilot Instructions: Follow .prompt.yml remediation steps.'
+              'Copilot: see .github/instructions/automation.prompt.yml for remediation steps.'
             ].join('\n');
             const { data: issues } = await github.rest.issues.listForRepo({ ...context.repo, state: 'open', labels: 'ci-failure' });
             if (!issues.find(i => i.title === title)) {

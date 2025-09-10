@@ -1,0 +1,41 @@
+# Maintenance & Dependency Automation Prompt
+# Purpose: Guidance specific to dependency update PR handling.
+# SRP: Only maintenance & dependency update strategy.
+
+version: 1
+kind: maintenance
+
+updates:
+  sources:
+    - dependabot
+    - renovate
+  strategy:
+    minorPatch: automerge
+    majorCore: manualReview (react, next)
+    security: fastTrack
+  grouping:
+    eslintStack: minorPatchAutomerge
+    playwrightStack: minorPatchAutomergeAfter1Day
+
+validation:
+  requiredScripts:
+    - npm run lint
+    - npm run typecheck
+    - npm run test:e2e
+
+pr:
+  bodyTemplate: |
+    Dependency Update
+    Source: {SOURCE}
+    Packages: {PACKAGES}
+
+    Validation Checklist
+    - [ ] Lint
+    - [ ] Typecheck
+    - [ ] E2E
+
+risk:
+  escalationCriteria:
+    - major version of next / react
+    - build failure introduced
+    - new high severity vulnerability

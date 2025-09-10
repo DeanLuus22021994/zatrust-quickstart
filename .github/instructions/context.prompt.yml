@@ -1,0 +1,47 @@
+# Project Context Prompt
+# Purpose: Provide static, high-level repository & architectural context.
+# SRP: Only domain / architecture description (no remediation logic).
+
+version: 1
+kind: context
+
+project:
+  name: Zatrust Quickstart
+  goals:
+    - Maintain perpetually green main branch
+    - Deterministic E2E validation for core flows
+    - Automated dependable dependency updates
+  stack:
+    runtime: nextjs@15
+    language: typescript@strict
+    ui: react@19
+    testing: playwright
+    workflows: [ci, codeql, shellcheck, automerge]
+  auth:
+    description: demo cookie auth via demo_user cookie guarded by middleware for /dashboard
+  architecture:
+    - Server Components default; introduce client boundaries minimally
+    - DRY utilities in src/lib
+    - Routes under src/app
+
+quality:
+  scripts:
+    dev: npm run dev
+    qa: npm run quality:all
+    e2e: npm run test:e2e
+  conventions:
+    commits: conventional
+    types: strict
+    accessibility: roles + semantic HTML
+
+metrics:
+  reliability:
+    ciPassRateTarget: 100%
+  performance:
+    bundleAnalyzeCmd: npm run analyze
+
+references:
+  docs:
+    - .github/copilot-instructions.md
+  automationPrompts:
+    - .github/instructions/automation.prompt.yml

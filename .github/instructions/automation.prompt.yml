@@ -1,0 +1,100 @@
+# Automation Orchestration Prompt (Workflow Failures)
+# Purpose: Standard remediation guidance for failed CI-related workflows.
+# SRP: Only describes how to triage and fix workflow failures.
+
+version: 1
+kind: automation
+
+workflows:
+  monitored:
+    - name: CI
+      label: ci-failure
+      remediation:
+        scripts:
+          - npm run quality:all
+        notes:
+          - Ensure both Node LTS and current matrix pass.
+          - Investigate first failing job, not cascade errors.
+    - name: ShellCheck
+      label: shellcheck-failure
+      remediation:
+        scripts:
+          - bash -n .devcontainer/scripts/*.sh
+          - shellcheck .devcontainer/scripts/*.sh
+        notes:
+          - Address highest severity (error) findings first.
+    - name: CodeQL (future)
+      label: codeql-failure
+      remediation:
+        scripts:
+          - npm install
+          - npm run build || true
+        notes:
+          - Review SARIF alerts in Security tab.
+
+issues:
+  create:
+    reuseExisting: true
+    aggregateSimilar: true
+  template:
+    title: "{WORKFLOW} Failure on {REF}"
+    labels: ["automation", "{LABEL}"]
+    body: |
+      ## Failure Summary
+      - Workflow: {WORKFLOW}
+      - Ref: {REF}
+      - Run URL: {RUN_URL}
+
+      ## Expected Action
+      1. Inspect failing job logs.
+      2. Reproduce locally with remediation script(s).
+      3. Apply minimal targeted fix (respect DRY & SOLID, server components by default).
+      4. Run: `npm run quality:all` until green.
+      5. Commit with conventional prefix (fix:, chore:, etc.).
+
+      ## Definition of Done
+      - All GitHub Actions workflows pass.
+      - No new lint/type errors.
+      - E2E suite green.
+      - Security posture unchanged (no new high vulns).
+
+      ## Reference
+      - .github/copilot-instructions.md
+      - package.json scripts
+
+copilot:
+  assign:
+    users:
+      - github-actions[bot]
+      - dependabot[bot]
+      - renovate[bot]
+  pr:
+    conventionalCommits: true
+    body: |
+      AUTO-GENERATED PR
+      Issue: #{ISSUE_NUMBER}
+      Workflow: {WORKFLOW}
+
+      ### Summary
+      {SUMMARY}
+
+      ### Validation
+      - [x] Lint / Typecheck
+      - [x] E2E
+      - [x] Build
+
+      ### Notes
+      {NOTES}
+
+policy:
+  coding:
+    strictTypes: true
+    serverComponentsDefault: true
+    sanitizeRedirects: true
+  dependencies:
+    autoMergeMinorPatch: true
+    reviewMajor: true
+
+security:
+  disallowSecretsInRepo: true
+  scanning: [codeql, npm-audit]
