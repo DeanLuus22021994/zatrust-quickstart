@@ -2,18 +2,25 @@ name: Auto-merge Dependencies
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened, labeled, ready_for_review]
 
 permissions:
   contents: write
   pull-requests: write
   checks: read
 
+concurrency:
+  group: automerge-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   automerge:
+    name: Auto-merge dependency PR
     if: >-
-      contains(github.event.pull_request.labels.*.name, 'dependencies') ||
-      contains(github.event.pull_request.labels.*.name, 'renovate')
+      !github.event.pull_request.draft &&
+      (contains(github.event.pull_request.labels.*.name, 'dependencies') ||
+       contains(github.event.pull_request.labels.*.name, 'renovate')) &&
+      (github.event.pull_request.user.login == 'dependabot[bot]' || github.event.pull_request.user.login == 'renovate[bot]')
     runs-on: ubuntu-latest
     steps:
       - name: Auto-merge minor/patch dependency PRs
@@ -24,3 +31,18 @@ jobs:
           target: minor
           allow-merge-commit: false
           use-github-auto-merge: true
+      - name: Comment merge status
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            core.info(`Evaluated auto-merge for #${pr.number}`);
+            // Optional: add a lightweight status comment only if not already merged
+            if (!pr.merged) {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: pr.number,
+                body: 'Auto-merge workflow evaluated. If conditions (minor/patch + labels) are satisfied, GitHub auto-merge will finalize once checks pass.'
+              });
+            }

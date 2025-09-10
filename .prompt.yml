@@ -1,0 +1,99 @@
+# Copilot Automation Prompt Configuration
+# This file guides GitHub Copilot (and any automation agent) when issues are
+# auto-created by failing workflows (CI, ShellCheck, future extensions). It
+# standardizes triage, fix strategy, and PR expectations.
+
+version: 1
+
+context:
+  project: "Zatrust Quickstart"
+  stack:
+    - nextjs@15 (app router, server components default)
+    - typescript@strict
+    - playwright (E2E)
+    - github-actions (ci, codeql, shellcheck, automerge)
+  auth: "demo cookie auth via demo_user; middleware protects /dashboard"
+  goals:
+    - "Maintain perpetually green main branch"
+    - "Automated dependable dependency updates (Dependabot + Renovate)"
+    - "Fast deterministic E2E validation for core flows"
+
+workflows:
+  monitored:
+    - name: CI
+      label: ci-failure
+      remediationScripts:
+        - "npm run quality:all"
+    - name: ShellCheck
+      label: shellcheck-failure
+      remediationScripts:
+        - "bash -n .devcontainer/scripts/*.sh"
+        - "shellcheck .devcontainer/scripts/*.sh"
+  createIssueRules:
+    reuseExisting: true
+    aggregateSimilar: true
+
+issueTemplate:
+  title: "{WORKFLOW} Failure on {REF}"
+  labels: ["automation", "{LABEL}"]
+  body: |
+    ## Failure Summary
+    - Workflow: {WORKFLOW}
+    - Ref: {REF}
+    - Run URL: {RUN_URL}
+
+    ## Expected Action
+    1. Inspect failing job logs.
+    2. Reproduce locally with the listed remediation script(s).
+    3. Apply minimal targeted fix (respect DRY & SOLID, server components by default).
+    4. Run: `npm run quality:all` until green.
+    5. Commit with conventional prefix (fix:, chore:, etc.).
+
+    ## Definition of Done
+    - All GitHub Actions workflows pass.
+    - No new lint/type errors.
+    - E2E suite green.
+    - Security posture unchanged (no new high vulns).
+
+    ## Reference
+    - ./github/copilot-instructions.md
+    - ./package.json scripts
+
+copilot:
+  assignment:
+    assignees:
+      - "github-actions[bot]"
+      - "dependabot[bot]"
+      - "renovate[bot]"
+  pullRequest:
+    autoRequestReview: false
+    requireConventionalCommits: true
+    bodyTemplate: |
+      AUTO-GENERATED PR
+      Issue: #{ISSUE_NUMBER}
+      Workflow: {WORKFLOW}
+
+      ### Summary
+      {SUMMARY}
+
+      ### Validation
+      - [x] Lint / Typecheck
+      - [x] E2E
+      - [x] Build
+
+      ### Notes
+      {NOTES}
+
+policy:
+  coding:
+    enforceStrictTypes: true
+    preferServerComponents: true
+    sanitizeRedirects: true
+  dependencies:
+    autoMergeMinorPatch: true
+    requireReviewForMajor: true
+
+security:
+  disallowSecretsInRepo: true
+  scanTools: [codeql, npm-audit]
+# End of .prompt.yml

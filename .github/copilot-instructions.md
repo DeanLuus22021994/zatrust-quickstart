@@ -2,192 +2,106 @@
 
 ## Project Overview
 
-This is a minimal, modular Next.js (TypeScript) starter focused on E2E testability, DRY principles, SRP (Single Responsibility Principle), SOLID principles, low-code patterns, and modular structure.
+This is a minimal, modular Next.js (TypeScript) starter focused on: E2E testability, DRY, SRP, SOLID, low-code patterns, modular structure, and automated maintenance (Dependabot/Renovate + GitHub Actions + Copilot). The goal is to keep the main branch always green and production-ready.
 
-## Architecture & Structure
+## Tech Stack
 
-### Tech Stack
+- Next.js 15 App Router (TypeScript strict)
+- React 19
+- Playwright for E2E
+- Simple cookie demo auth (replace in prod)
+- Docker Dev Container support
 
-- **Framework**: Next.js 14 with App Router
-- **Language**: TypeScript (strict mode enabled)
-- **Styling**: CSS (global styles in `src/app/globals.css`)
-- **Testing**: Playwright for E2E testing
-- **Auth**: Simple cookie-based demo auth (replace with NextAuth or IdP for production)
-- **Development**: Docker Dev Container support
-
-### Directory Structure
+## Directory Structure (high level)
 
 ```
 src/
-├── app/                    # Next.js App Router pages
-│   ├── api/               # API routes
-│   ├── dashboard/         # Protected dashboard pages
-│   ├── login/             # Authentication pages
-│   ├── globals.css        # Global styles
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Home page
-├── components/            # Reusable React components
-│   └── auth/              # Authentication-related components
-└── middleware.ts          # Next.js middleware for route protection
-
-tests/
-└── e2e.spec.ts           # End-to-end tests
-
-.devcontainer/            # Docker development container
+  app/ (routes, api, pages, layouts)
+  components/ (reusable UI + auth components)
+  lib/ (utilities)
+  middleware.ts (route protection)
+.tests / tests/
+.github/ (workflows, dependency automation)
 ```
 
-## Development Guidelines
+## Conventions
 
-### Code Style & Conventions
+- Server Components by default; add `"use client"` only when necessary.
+- Type-only imports use `import type`.
+- Components: concise, single responsibility, composable.
+- Avoid repetition: extract shared logic into `lib/` or small components.
 
-1. **TypeScript Configuration**
-   - Strict mode enabled with `noUncheckedIndexedAccess` and `noImplicitOverride`
-   - Use absolute imports with path aliases: `@/components/*` and `@/lib/*`
-   - Target ES2022 with modern features
+## Auth Pattern
 
-2. **React/Next.js Conventions**
-   - Use App Router (not Pages Router)
-   - Prefer functional components with TypeScript
-   - Use `type` imports for type-only imports: `import type { ReactNode } from 'react'`
-   - Server Components by default, use `'use client'` only when necessary
+- Middleware checks for `demo_user` cookie to guard `/dashboard/*`.
+- Login form optionally receives a sanitized `from` param for post-auth redirect.
 
-3. **File Naming**
-   - React components: PascalCase (e.g., `LoginForm.tsx`)
-   - Pages: lowercase (e.g., `page.tsx`, `layout.tsx`)
-   - Utilities/libs: camelCase
+## Testing
 
-4. **Component Structure**
-   - Keep components small and focused (SRP)
-   - Use composition over inheritance
-   - Extract reusable components to `src/components/`
-   - Group related components in subdirectories
+- Playwright E2E covers core auth + navigation flows.
+- Use data-testid sparingly; rely on roles and accessible names.
+- Keep tests deterministic and independent.
 
-### Authentication Flow
+## Automated Maintenance
 
-- Simple cookie-based auth using `demo_user` cookie
-- Middleware protects `/dashboard/*` routes
-- Login redirects with `from` parameter for post-auth navigation
-- Replace with proper auth provider (NextAuth, etc.) for production
+- Dependabot + Renovate: grouped strategies for stable updates.
+- Auto-merge workflow: only minor/patch dependency PRs from trusted bots with proper labels.
+- CI matrix (Node LTS + current) ensures forward compatibility.
+- CodeQL for code scanning.
+- ShellCheck for shell script hygiene.
+- Issues auto-created on workflow failures (ci, shellcheck) to trigger Copilot remediation guided by `.prompt.yml`.
 
-### Testing Strategy
+## Performance & SEO
 
-1. **E2E Testing with Playwright**
-   - Tests located in `tests/` directory
-   - Covers happy path authentication flow
-   - Run with `npm run test:e2e`
-   - UI mode available: `npm run test:e2e:ui`
+- Use Next.js Image and Link optimizations where applicable.
+- Keep bundle lean; analyze with `ANALYZE=true next build`.
 
-2. **Test Writing Guidelines**
-   - Focus on user journeys, not implementation details
-   - Use data-testid attributes for reliable selectors
-   - Test critical paths and error scenarios
-   - Keep tests independent and atomic
+## Adding Features
 
-### Development Workflow
+1. Create new route under `src/app/<route>/page.tsx`.
+2. Prefer server components; introduce client boundary at smallest necessary leaf.
+3. Add types for props and extracted utilities.
+4. Extend E2E tests to cover new user journey.
 
-1. **Available Scripts**
-   - `npm run dev` - Development server (port 3000)
-   - `npm run build` - Production build
-   - `npm run lint` - ESLint with Next.js config
-   - `npm run format` - Prettier formatting
-   - `npm run typecheck` - TypeScript checking
-   - `npm run test:e2e` - Playwright tests
+## Error Handling
 
-2. **Docker Development**
-   - Use `docker compose up -d dev` for containerized development
-   - VS Code Dev Container support included
+- Provide `error.tsx` at route segment if bespoke recovery is needed.
+- Use conventional HTTP status codes in API routes.
 
-### Code Quality Standards
+## Security & Reliability Notes
 
-1. **DRY (Don't Repeat Yourself)**
-   - Extract common logic into utilities
-   - Create reusable components for shared UI patterns
-   - Use TypeScript interfaces for shared types
+- Sanitize redirect sources (only relative internal paths).
+- Keep dependencies updated (automation already configured).
+- Run `npm run quality:all` locally before pushing significant changes.
 
-2. **SOLID Principles**
-   - Single Responsibility: Each component/function has one purpose
-   - Open/Closed: Extend functionality through composition
-   - Liskov Substitution: Use proper TypeScript types
-   - Interface Segregation: Create focused interfaces
-   - Dependency Inversion: Depend on abstractions, not concretions
+## Copilot Maintenance Guidance
 
-3. **Performance Considerations**
-   - Use Next.js Server Components by default
-   - Implement proper loading states
-   - Optimize images with Next.js Image component
-   - Use dynamic imports for large components
+When Copilot is assigned an issue generated by a failing workflow:
 
-### When Adding New Features
+1. Inspect related workflow run logs.
+2. Reproduce locally if feasible (run relevant npm script).
+3. Propose minimal, targeted fix adhering to project conventions.
+4. Update or add tests if behavior changes.
+5. Ensure all workflows pass (CI, ShellCheck, CodeQL unaffected).
+6. Provide concise PR description referencing issue number and root cause.
 
-1. **Pages/Routes**
-   - Add new routes in `src/app/` following App Router conventions
-   - Use `layout.tsx` for shared layouts
-   - Implement proper loading and error boundaries
+## Commit Message Style
 
-2. **Components**
-   - Start with Server Components, add `'use client'` only if needed
-   - Create reusable components in `src/components/`
-   - Use TypeScript interfaces for props
-   - Keep components focused and testable
+- Conventional commits preferred (e.g., `feat:`, `fix:`, `chore: deps:`, `test:`).
 
-3. **API Routes**
-   - Place API routes in `src/app/api/`
-   - Use proper HTTP methods and status codes
-   - Implement error handling
-   - Add type safety for request/response
+## Do / Avoid
 
-4. **Testing**
-   - Add E2E tests for new user journeys
-   - Update existing tests if behavior changes
-   - Ensure tests run reliably in CI/CD
+- Do: small focused PRs.
+- Do: enforce strict types.
+- Avoid: large unreviewed rewrites.
+- Avoid: introducing stateful global singletons outside Next.js conventions.
 
-### Styling Guidelines
+## Quick Reference Scripts
 
-- Use semantic class names (e.g., `site-header`, `nav-link`)
-- Keep global styles minimal and focused
-- Consider CSS Modules or styled-components for component-specific styles
-- Maintain responsive design principles
+- `npm run dev` – Start dev server.
+- `npm run quality:all` – Lint + typecheck + E2E tests headless.
+- `npm run test:e2e:ui` – Debug E2E interactively.
 
-### Performance & SEO
+## Closing Notes
 
-- Use proper meta tags in layout.tsx
-- Implement proper loading states
-- Use Next.js built-in optimizations (Image, Link, etc.)
-- Consider static generation where appropriate
-
-## Common Patterns
-
-### Protected Routes
-
-Use middleware.ts pattern for route protection:
-
-```typescript
-export function middleware(request: NextRequest) {
-  const isLoggedIn = request.cookies.has("demo_user");
-  // Protection logic
-}
-```
-
-### Form Handling
-
-Create controlled components with proper TypeScript typing:
-
-```typescript
-interface FormProps {
-  onSubmit: (data: FormData) => void;
-}
-```
-
-### Error Boundaries
-
-Implement error.tsx files in app directory for error handling
-
-## Deployment Notes
-
-- Replace demo auth with production-ready solution
-- Configure proper environment variables
-- Set up proper database connections
-- Implement proper session management
-- Add monitoring and logging
-
-Remember: Keep changes modular, testable, and aligned with the project's focus on clean, maintainable code.
+Keep changes incremental and observable. Always leave the codebase healthier than you found it.

@@ -18,6 +18,7 @@ permissions:
   checks: write
   pull-requests: write
   security-events: write
+  issues: write
 
 jobs:
   quality:
@@ -28,9 +29,14 @@ jobs:
       fail-fast: false
       matrix:
         node: ["20.x", "22.x"]
+    env:
+      NEXT_TELEMETRY_DISABLED: 1
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Use Node.js ${{ matrix.node }}
         uses: actions/setup-node@v4
@@ -38,16 +44,22 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: "npm"
 
+      - name: Display dependency versions
+        run: node -v && npm -v
+
       - name: Restore Next.js cache
         uses: actions/cache@v4
         with:
           path: .next/cache
-          key: next-${{ matrix.node }}-${{ hashFiles('**/package-lock.json') }}
+          key: next-cache-${{ runner.os }}-${{ matrix.node }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-            next-${{ matrix.node }}-
+            next-cache-${{ runner.os }}-${{ matrix.node }}-
 
-      - name: Install dependencies
+      - name: Install dependencies (ci)
         run: npm ci
+
+      - name: Doctor (sanity deps)
+        run: npm run doctor
 
       - name: Type check
         run: npm run typecheck
@@ -73,6 +85,7 @@ jobs:
           name: playwright-report-${{ matrix.node }}
           path: playwright-report
           if-no-files-found: ignore
+          retention-days: 7
 
       - name: Upload test results (always)
         if: always()
@@ -81,12 +94,37 @@ jobs:
           name: test-results-${{ matrix.node }}
           path: test-results
           if-no-files-found: ignore
+          retention-days: 7
 
       - name: Generate bundle analysis (build stats)
         run: npx next build --profile || true
 
       - name: Audit (high+ fail)
         run: npm audit --audit-level=high || true
+
+      - name: Create issue on failure (auto-managed)
+        if: failure() && github.event_name != 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `CI Failure on ${process.env.GITHUB_REF}`;
+            const body = [
+              'Automated issue created due to CI failure.',
+              'Workflow: CI',
+              `Ref: ${process.env.GITHUB_REF}`,
+              'Please investigate failing job logs.',
+              '',
+              'Copilot Instructions: Follow .prompt.yml remediation steps.'
+            ].join('\n');
+            const { data: issues } = await github.rest.issues.listForRepo({ ...context.repo, state: 'open', labels: 'ci-failure' });
+            if (!issues.find(i => i.title === title)) {
+              await github.rest.issues.create({
+                ...context.repo,
+                title,
+                body,
+                labels: ['ci-failure','automation']
+              });
+            }
 
   dependency-review:
     if: github.event_name == 'pull_request'
@@ -108,8 +146,8 @@ jobs:
       - name: Use Node.js 20.x
         uses: actions/setup-node@v4
         with:
-          node-version: "20.x"
-          cache: "npm"
+          node-version: 20.x
+          cache: npm
       - name: Install dependencies
         run: npm ci
       - name: Audit (moderate+)
@@ -119,10 +157,10 @@ jobs:
       - name: Upload lockfile for inspection
         uses: actions/upload-artifact@v4
         with:
-          name: nightly-lockfile
+          name: lockfile-nightly
           path: package-lock.json
+          retention-days: 3
 
-  # Aggregate status (optional future extension)
   summary:
     needs: [quality]
     runs-on: ubuntu-latest

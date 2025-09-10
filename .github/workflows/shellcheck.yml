@@ -3,26 +3,63 @@ name: ShellCheck
 on:
   push:
     paths:
-      - '.devcontainer/scripts/**/*.sh'
-      - '.github/workflows/shellcheck.yml'
+      - ".devcontainer/scripts/**/*.sh"
+      - ".github/workflows/shellcheck.yml"
   pull_request:
     paths:
-      - '.devcontainer/scripts/**/*.sh'
+      - ".devcontainer/scripts/**/*.sh"
   schedule:
-    - cron: '0 3 * * 1'
+    - cron: "0 3 * * 1"
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   shellcheck:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sc-version: ["stable"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Install ShellCheck
-        run: sudo apt-get update && sudo apt-get install -y shellcheck
+        run: |
+          sudo apt-get update
+            
+          sudo apt-get install -y shellcheck
       - name: Run ShellCheck
         run: |
           set -e
-          shellcheck .devcontainer/scripts/*.sh
+          shellcheck -f gcc .devcontainer/scripts/*.sh | tee shellcheck-report.txt || true
+          # exit non-zero if any issues of severity error
+          if grep -E 'error:' shellcheck-report.txt; then
+            echo "Errors detected" >&2
+            exit 1
+          fi
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shellcheck-report
+          path: shellcheck-report.txt
+          retention-days: 7
+      - name: Create issue on failure
+        if: failure() && github.event_name != 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = 'ShellCheck Failure';
+            const body = 'Automated issue due to ShellCheck failure. Refer to artifact shellcheck-report.txt. Copilot: see .prompt.yml remediation steps.';
+            const { data: issues } = await github.rest.issues.listForRepo({ ...context.repo, state: 'open', labels: 'shellcheck-failure' });
+            if (!issues.find(i => i.title === title)) {
+              await github.rest.issues.create({
+                ...context.repo,
+                title,
+                body,
+                labels: ['shellcheck-failure','automation']
+              });
+            }
