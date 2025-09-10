@@ -47,7 +47,7 @@
     "ENABLE_GH_RUNNER": "true"
   },
   "postCreateCommand": "bash .devcontainer/scripts/provision.sh",
-  "postStartCommand": "bash -lc 'if [ ! -f .next/BUILD_ID ]; then echo [postStart] Starting dev server; npm run dev & else echo [postStart] Reusing existing build; fi'",
+  "postStartCommand": "bash -lc 'if [ ! -f .next/BUILD_ID ]; then echo [postStart] Starting dev server; npm run dev >/tmp/dev.log 2>&1 & else echo [postStart] Reusing existing build; fi'",
   "forwardPorts": [3000, 9323],
   "remoteEnv": {
     "WEB_PORT": "3000",

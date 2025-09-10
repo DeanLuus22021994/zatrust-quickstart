@@ -111,6 +111,18 @@ npm install
 
 Then reload the window.
 
+### TypeScript tsserver path warning inside Dev Container
+
+If VS Code reports an invalid tsserver path (e.g. /zatrust-quickstart/node_modules/...):
+The provisioning now creates a compatibility symlink /zatrust-quickstart -> /workspaces/zatrust-quickstart.
+If issues persist:
+
+```bash
+npm run provision
+rm -rf node_modules/.cache/typescript 2>/dev/null || true
+Reload VS Code window
+```
+
 ### JS/TS Language Service crashes
 
 Try:

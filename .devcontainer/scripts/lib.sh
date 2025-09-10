@@ -56,6 +56,25 @@ configure_git_safe_directory() {
   fi
 }
 
+ensure_workspace_symlink() {
+  # Some language tools (VS Code remote) refer to /zatrust-quickstart even though
+  # the project is mounted at /workspaces/zatrust-quickstart. Provide a stable
+  # symlink to avoid path resolution issues (e.g., tsserver path mismatch warnings).
+  if [ ! -e /zatrust-quickstart ]; then
+    ln -s /workspaces/zatrust-quickstart /zatrust-quickstart || true
+    log "Created symlink /zatrust-quickstart -> /workspaces/zatrust-quickstart"
+  else
+    # Ensure it points correctly
+    if [ "$(readlink /zatrust-quickstart || true)" != "/workspaces/zatrust-quickstart" ]; then
+      rm -f /zatrust-quickstart
+      ln -s /workspaces/zatrust-quickstart /zatrust-quickstart || true
+      log "Recreated corrected symlink /zatrust-quickstart"
+    else
+      log "Workspace symlink present"
+    fi
+  fi
+}
+
 install_node_dependencies() {
   if [ -f package-lock.json ]; then
     log "npm ci (fallback to install)"
@@ -75,6 +94,21 @@ install_node_dependencies() {
   # Post-install sanity checks for TypeScript / ESLint resolution
   if [ ! -f node_modules/typescript/lib/tsserver.js ]; then
     log "TypeScript tsserver missing -> reinstalling typescript"
+    npm install --no-audit --no-fund typescript@latest
+  fi
+  if [ -f node_modules/typescript/lib/tsserver.js ] && [ ! -r node_modules/typescript/lib/tsserver.js ]; then
+    log "tsserver.js not readable -> adjusting permissions"
+    chmod a+r node_modules/typescript/lib/tsserver.js || true
+  fi
+  # Ownership fix (rare case where previous root install left root-owned tree)
+  if [ -d node_modules/typescript ] && [ "$(stat -c %u node_modules/typescript 2>/dev/null || echo 0)" -eq 0 ]; then
+    log "Adjusting ownership of typescript package to current user"
+    chown -R "$(id -u)":"$(id -g)" node_modules/typescript || true
+  fi
+  # Final validation
+  if ! node -e 'require("fs").accessSync("node_modules/typescript/lib/tsserver.js")' 2>/dev/null; then
+    log "tsserver.js still inaccessible -> forcing clean reinstall of typescript"
+    rm -rf node_modules/typescript
     npm install --no-audit --no-fund typescript@latest
   fi
   if [ ! -d node_modules/eslint ]; then
@@ -114,6 +148,7 @@ provision_all() {
   check_requirements
   ensure_git_identity
   configure_git_safe_directory
+  ensure_workspace_symlink
   install_node_dependencies
   install_playwright
   start_github_runner
