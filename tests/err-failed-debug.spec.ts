@@ -13,14 +13,19 @@ test.describe("ERR_FAILED debugging and comprehensive error monitoring", () => {
     });
     
     page.on('requestfailed', request => {
-      // Only track application-related failures, not dev tools
+      // Only track application-related failures, not dev tools or expected redirect behavior
       if (!request.url().includes('webpack') && 
           !request.url().includes('hot-update') &&
           !request.url().includes('_next/static/webpack')) {
-        networkErrors.push({
-          url: request.url(),
-          failure: request.failure()
-        });
+        
+        const failure = request.failure();
+        // Filter out ERR_ABORTED errors which are normal during login redirects
+        if (failure?.errorText !== 'net::ERR_ABORTED') {
+          networkErrors.push({
+            url: request.url(),
+            failure: failure
+          });
+        }
       }
     });
 
@@ -74,13 +79,17 @@ test.describe("ERR_FAILED debugging and comprehensive error monitoring", () => {
         return; // Ignore these development-specific failures
       }
       
-      networkFailures.push({
-        url: request.url(),
-        method: request.method(),
-        failure: request.failure(),
-        timestamp: new Date().toISOString()
-      });
-      console.error('Network request failed:', request.url(), request.failure());
+      const failure = request.failure();
+      // Filter out ERR_ABORTED errors which are normal during login redirects
+      if (failure?.errorText !== 'net::ERR_ABORTED') {
+        networkFailures.push({
+          url: request.url(),
+          method: request.method(),
+          failure: failure,
+          timestamp: new Date().toISOString()
+        });
+        console.error('Network request failed:', request.url(), failure);
+      }
     });
 
     page.on('response', response => {
