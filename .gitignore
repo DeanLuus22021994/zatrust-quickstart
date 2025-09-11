@@ -13,6 +13,7 @@ out/
 playwright-report/
 playwright/.cache/
 .test-results/
+test-results/
 coverage/
 
 # OS / Editor
