@@ -129,6 +129,5 @@ export const features = {
  */
 export const buildInfo = {
   buildTime: new Date().toISOString(),
-  nodeVersion: process.version,
   environment: process.env.NODE_ENV || "development"
 } as const;
