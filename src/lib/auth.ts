@@ -27,6 +27,18 @@ export function sanitizeRedirectPath(
 }
 
 /**
+ * Client-safe redirect function that ensures proper sanitization
+ * before performing window.location redirects to prevent open redirects
+ */
+export function safeClientRedirect(
+  destination: string | null | undefined,
+  fallback: string = config.app.defaultRedirect
+): void {
+  const sanitizedPath = sanitizeRedirectPath(destination, fallback);
+  window.location.href = sanitizedPath;
+}
+
+/**
  * @deprecated Use validation utilities from @/lib/validation instead
  */
 export function validateUsername(raw: unknown): { ok: boolean; value: string } {

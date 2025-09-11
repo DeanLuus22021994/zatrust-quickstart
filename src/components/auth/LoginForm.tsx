@@ -13,6 +13,7 @@
 import React from "react";
 
 import { LoadingButton } from "@/components/ui/LoadingStates";
+import { safeClientRedirect } from "@/lib/auth";
 import { useFormValidation, useFormSubmission, ValidatedInput } from "@/lib/client-validation";
 import { loginSchema } from "@/lib/validation";
 
@@ -67,15 +68,16 @@ export default function LoginForm({ from }: LoginFormProps) {
         // Handle redirects manually
         if (response.type === 'opaqueredirect' || response.status === 0) {
           // For manual redirects, we get an opaque response
-          // Just redirect to the expected destination
-          window.location.href = from || '/dashboard';
+          // Use safe redirect to prevent open redirect vulnerabilities
+          safeClientRedirect(from);
           return;
         }
         
         if (response.status === 302 || response.status === 307) {
           const redirectUrl = response.headers.get('location');
           if (redirectUrl) {
-            window.location.href = redirectUrl;
+            // Sanitize redirect URL to ensure it's a safe internal path
+            safeClientRedirect(redirectUrl);
             return;
           }
         }
@@ -86,7 +88,7 @@ export default function LoginForm({ from }: LoginFormProps) {
         }
 
         // Fallback redirect if no location header
-        window.location.href = from || '/dashboard';
+        safeClientRedirect(from);
       });
     });
   };
