@@ -1,45 +1,34 @@
-import { cookies } from "next/headers";
+import { DashboardContent, UnauthenticatedView } from "@/components/dashboard/DashboardContent";
+import { logger } from "@/lib/logger";
+import { getCurrentUser } from "@/lib/session";
 
 export default async function DashboardPage() {
   try {
-    console.log("Dashboard page rendering started");
+    logger.debug("Dashboard page rendering started");
     
-    const cookieStore = await cookies();
-    const user = cookieStore.get("demo_user");
+    const user = await getCurrentUser();
     
-    console.log("Dashboard user check:", { 
+    logger.debug("Dashboard user check", { 
       userExists: !!user, 
-      username: user?.value,
-      timestamp: new Date().toISOString()
+      username: user?.username
     });
 
     if (!user) {
-      console.warn("Dashboard accessed without valid user cookie");
+      logger.warn("Dashboard accessed without valid user session");
     }
 
     return (
       <section>
         <h1>Dashboard</h1>
         {user ? (
-          <>
-            <p>Welcome, {user.value}</p>
-            <form action="/api/auth/logout" method="post">
-              <button type="submit">Logout</button>
-            </form>
-            <div style={{ marginTop: '20px', fontSize: '0.8rem', color: '#666' }}>
-              <p>Debug info: Loaded at {new Date().toISOString()}</p>
-            </div>
-          </>
+          <DashboardContent user={user} />
         ) : (
-          <div>
-            <p>You are not logged in.</p>
-            <a href="/login">Go to Login</a>
-          </div>
+          <UnauthenticatedView />
         )}
       </section>
     );
   } catch (error) {
-    console.error("Dashboard page error:", error);
+    logger.error("Dashboard page error", error instanceof Error ? error : new Error(String(error)));
     throw error; // Re-throw to trigger error boundary
   }
 }

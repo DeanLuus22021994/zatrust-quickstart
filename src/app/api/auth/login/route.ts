@@ -1,36 +1,31 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { sanitizeRedirectPath, validateUsername } from "@/lib/auth";
+import { logger } from "@/lib/logger";
+import { setUserSession } from "@/lib/session";
 
 export async function POST(request: Request) {
   try {
-    console.log("Login attempt started");
+    logger.info("Login attempt started");
     
     const formData = await request.formData();
     const { ok, value } = validateUsername(formData.get("username"));
     const fromRaw = formData.get("from") || "/dashboard";
     const from = sanitizeRedirectPath(fromRaw);
 
-    console.log("Login data:", { username: value, from, fromRaw });
+    logger.debug("Login data", { username: value, from, fromRaw });
 
     if (!ok) {
-      console.log("Login failed: invalid username");
+      logger.warn("Login failed: invalid username");
       return NextResponse.json(
         { error: "Username is required" },
         { status: 400 }
       );
     }
 
-    const cookieStore = await cookies();
-    cookieStore.set("demo_user", value, {
-      httpOnly: true,
-      path: "/",
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-    });
+    await setUserSession(value);
 
-    console.log("Login successful, redirecting to:", from);
+    logger.info("Login successful, redirecting", { username: value, destination: from });
     
     // Use a 302 redirect instead of 307 to avoid potential ERR_FAILED issues
     const redirectUrl = new URL(from, request.url);
@@ -38,7 +33,7 @@ export async function POST(request: Request) {
     
     return response;
   } catch (error) {
-    console.error("Login error:", error);
+    logger.error("Login error", error instanceof Error ? error : new Error(String(error)));
     return NextResponse.json(
       { error: "Internal server error during login" },
       { status: 500 }
