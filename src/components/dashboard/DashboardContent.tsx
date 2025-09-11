@@ -11,11 +11,12 @@
  * ```
  */
 
+"use client";
+
 import React from "react";
 
 import type { User } from "@/lib/session";
 
-import { LoadingButton, useLoadingState } from "@/components/ui/LoadingStates";
 import { config } from "@/lib/config";
 
 /**
@@ -30,36 +31,6 @@ interface DashboardContentProps {
  * Main dashboard content component with enhanced logout functionality
  */
 export function DashboardContent({ user }: DashboardContentProps) {
-  const { loading: isLoggingOut, startLoading, stopLoading } = useLoadingState();
-
-  /**
-   * Handle logout with loading state and error handling
-   */
-  const handleLogout = async (event: React.FormEvent) => {
-    event.preventDefault();
-    startLoading();
-
-    try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST'
-      });
-
-      if (response.ok) {
-        // Server will redirect, but we can handle it gracefully
-        window.location.href = response.url || config.auth.homePath;
-      } else {
-        // If server redirect fails, handle it client-side
-        window.location.href = config.auth.homePath;
-      }
-    } catch (error) {
-      // Fallback: redirect to home even if logout request fails
-      console.error('Logout error:', error);
-      window.location.href = config.auth.homePath;
-    } finally {
-      stopLoading();
-    }
-  };
-
   return (
     <div className="dashboard-content">
       <header className="dashboard-header">
@@ -69,15 +40,13 @@ export function DashboardContent({ user }: DashboardContentProps) {
 
       <main className="dashboard-main">
         <section className="dashboard-actions">
-          <form onSubmit={handleLogout}>
-            <LoadingButton
+          <form method="POST" action="/api/auth/logout">
+            <button
               type="submit"
-              loading={isLoggingOut}
-              loadingText="Signing out..."
               className="logout-button"
             >
               Logout
-            </LoadingButton>
+            </button>
           </form>
         </section>
 

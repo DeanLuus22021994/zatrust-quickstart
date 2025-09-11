@@ -13,6 +13,7 @@
 import React from "react";
 
 import { LoadingButton } from "@/components/ui/LoadingStates";
+import { safeClientRedirect } from "@/lib/auth";
 import { useFormValidation, useFormSubmission, ValidatedInput } from "@/lib/client-validation";
 import { loginSchema } from "@/lib/validation";
 
@@ -60,16 +61,34 @@ export default function LoginForm({ from }: LoginFormProps) {
 
         const response = await fetch('/api/auth/login', {
           method: 'POST',
-          body: formData
+          body: formData,
+          redirect: 'manual' // Prevent automatic redirect following
         });
 
+        // Handle redirects manually
+        if (response.type === 'opaqueredirect' || response.status === 0) {
+          // For manual redirects, we get an opaque response
+          // Use safe redirect to prevent open redirect vulnerabilities
+          safeClientRedirect(from);
+          return;
+        }
+        
+        if (response.status === 302 || response.status === 307) {
+          const redirectUrl = response.headers.get('location');
+          if (redirectUrl) {
+            // Sanitize redirect URL to ensure it's a safe internal path
+            safeClientRedirect(redirectUrl);
+            return;
+          }
+        }
+
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.error || 'Login failed');
         }
 
-        // Redirect will be handled by the server response
-        window.location.href = response.url;
+        // Fallback redirect if no location header
+        safeClientRedirect(from);
       });
     });
   };
@@ -82,7 +101,7 @@ export default function LoginForm({ from }: LoginFormProps) {
   }, [values.username, submitError, clearError]);
 
   return (
-    <form onSubmit={onSubmit} className="login-form" noValidate>
+    <form onSubmit={onSubmit} action="/api/auth/login" className="login-form" noValidate>
       {from && <input type="hidden" name="from" value={from} />}
       
       <ValidatedInput
