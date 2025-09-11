@@ -11,6 +11,8 @@
  * ```
  */
 
+"use client";
+
 import React from "react";
 
 import type { User } from "@/lib/session";
@@ -41,23 +43,38 @@ export function DashboardContent({ user }: DashboardContentProps) {
 
     try {
       const response = await fetch('/api/auth/logout', {
-        method: 'POST'
+        method: 'POST',
+        redirect: 'manual' // Prevent automatic redirect following
       });
 
-      if (response.ok) {
-        // Server will redirect, but we can handle it gracefully
-        window.location.href = response.url || config.auth.homePath;
-      } else {
-        // If server redirect fails, handle it client-side
+      console.log('Logout response:', response.status, response.type);
+
+      // Handle redirects manually, similar to login
+      if (response.type === 'opaqueredirect' || response.status === 0) {
+        // For manual redirects, we get an opaque response
+        console.log('Opaque redirect detected, redirecting to home');
         window.location.href = config.auth.homePath;
+        return;
       }
+      
+      if (response.status === 302 || response.status === 307) {
+        const redirectUrl = response.headers.get('location');
+        console.log('Redirect detected, location:', redirectUrl);
+        if (redirectUrl) {
+          window.location.href = redirectUrl;
+          return;
+        }
+      }
+
+      console.log('No redirect detected, using fallback');
+      // Fallback: redirect to home
+      window.location.href = config.auth.homePath;
     } catch (error) {
       // Fallback: redirect to home even if logout request fails
       console.error('Logout error:', error);
       window.location.href = config.auth.homePath;
-    } finally {
-      stopLoading();
     }
+    // Don't call stopLoading() since we're redirecting
   };
 
   return (

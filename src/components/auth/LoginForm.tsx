@@ -60,16 +60,33 @@ export default function LoginForm({ from }: LoginFormProps) {
 
         const response = await fetch('/api/auth/login', {
           method: 'POST',
-          body: formData
+          body: formData,
+          redirect: 'manual' // Prevent automatic redirect following
         });
 
+        // Handle redirects manually
+        if (response.type === 'opaqueredirect' || response.status === 0) {
+          // For manual redirects, we get an opaque response
+          // Just redirect to the expected destination
+          window.location.href = from || '/dashboard';
+          return;
+        }
+        
+        if (response.status === 302 || response.status === 307) {
+          const redirectUrl = response.headers.get('location');
+          if (redirectUrl) {
+            window.location.href = redirectUrl;
+            return;
+          }
+        }
+
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.error || 'Login failed');
         }
 
-        // Redirect will be handled by the server response
-        window.location.href = response.url;
+        // Fallback redirect if no location header
+        window.location.href = from || '/dashboard';
       });
     });
   };
