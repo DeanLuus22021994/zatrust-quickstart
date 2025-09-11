@@ -34,49 +34,6 @@ interface DashboardContentProps {
 export function DashboardContent({ user }: DashboardContentProps) {
   const { loading: isLoggingOut, startLoading, stopLoading } = useLoadingState();
 
-  /**
-   * Handle logout with loading state and error handling
-   */
-  const handleLogout = async (event: React.FormEvent) => {
-    event.preventDefault();
-    startLoading();
-
-    try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        redirect: 'manual' // Prevent automatic redirect following
-      });
-
-      console.log('Logout response:', response.status, response.type);
-
-      // Handle redirects manually, similar to login
-      if (response.type === 'opaqueredirect' || response.status === 0) {
-        // For manual redirects, we get an opaque response
-        console.log('Opaque redirect detected, redirecting to home');
-        window.location.href = config.auth.homePath;
-        return;
-      }
-      
-      if (response.status === 302 || response.status === 307) {
-        const redirectUrl = response.headers.get('location');
-        console.log('Redirect detected, location:', redirectUrl);
-        if (redirectUrl) {
-          window.location.href = redirectUrl;
-          return;
-        }
-      }
-
-      console.log('No redirect detected, using fallback');
-      // Fallback: redirect to home
-      window.location.href = config.auth.homePath;
-    } catch (error) {
-      // Fallback: redirect to home even if logout request fails
-      console.error('Logout error:', error);
-      window.location.href = config.auth.homePath;
-    }
-    // Don't call stopLoading() since we're redirecting
-  };
-
   return (
     <div className="dashboard-content">
       <header className="dashboard-header">
@@ -86,7 +43,7 @@ export function DashboardContent({ user }: DashboardContentProps) {
 
       <main className="dashboard-main">
         <section className="dashboard-actions">
-          <form onSubmit={handleLogout}>
+          <form method="POST" action="/api/auth/logout">
             <LoadingButton
               type="submit"
               loading={isLoggingOut}

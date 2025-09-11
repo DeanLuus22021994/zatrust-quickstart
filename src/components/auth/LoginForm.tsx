@@ -99,7 +99,7 @@ export default function LoginForm({ from }: LoginFormProps) {
   }, [values.username, submitError, clearError]);
 
   return (
-    <form onSubmit={onSubmit} className="login-form" noValidate>
+    <form onSubmit={onSubmit} action="/api/auth/login" className="login-form" noValidate>
       {from && <input type="hidden" name="from" value={from} />}
       
       <ValidatedInput

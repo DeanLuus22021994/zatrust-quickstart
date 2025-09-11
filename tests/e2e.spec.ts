@@ -122,7 +122,10 @@ test.describe("authentication permutations", () => {
     });
     expect(resp.status()).toBe(400);
     const json = await resp.json();
-    expect(json).toEqual({ error: "Username is required" });
+    expect(json).toEqual({ 
+      error: "Validation failed", 
+      details: { username: "username is required" } 
+    });
   });
 
   test("login then access protected page directly (cookie persists)", async ({
