@@ -17,7 +17,6 @@ import React from "react";
 
 import type { User } from "@/lib/session";
 
-import { LoadingButton, useLoadingState } from "@/components/ui/LoadingStates";
 import { config } from "@/lib/config";
 
 /**
@@ -32,8 +31,6 @@ interface DashboardContentProps {
  * Main dashboard content component with enhanced logout functionality
  */
 export function DashboardContent({ user }: DashboardContentProps) {
-  const { loading: isLoggingOut, startLoading, stopLoading } = useLoadingState();
-
   return (
     <div className="dashboard-content">
       <header className="dashboard-header">
@@ -44,14 +41,12 @@ export function DashboardContent({ user }: DashboardContentProps) {
       <main className="dashboard-main">
         <section className="dashboard-actions">
           <form method="POST" action="/api/auth/logout">
-            <LoadingButton
+            <button
               type="submit"
-              loading={isLoggingOut}
-              loadingText="Signing out..."
               className="logout-button"
             >
               Logout
-            </LoadingButton>
+            </button>
           </form>
         </section>
 
