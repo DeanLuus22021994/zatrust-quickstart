@@ -5,14 +5,11 @@
 
 import { cookies } from "next/headers";
 
+import { config } from "./config";
+
 export const SESSION_CONFIG = {
-  cookieName: "demo_user",
-  options: {
-    httpOnly: true,
-    path: "/",
-    sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
-  }
+  cookieName: config.auth.sessionCookie,
+  options: config.security.cookieOptions
 } as const;
 
 export interface User {
