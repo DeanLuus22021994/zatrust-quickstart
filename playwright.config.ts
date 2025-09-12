@@ -22,7 +22,7 @@ export default defineConfig({
   ],
   webServer: useProd
     ? {
-        command: "npm run build && npm run start -p 3001",
+        command: "npm run build && PORT=3001 npm run start",
         port: 3001,
         reuseExistingServer: false,
         timeout: 180 * 1000,
