@@ -1,0 +1,15 @@
+name: "CodeQL Configuration"
+
+paths-ignore:
+  - node_modules
+  - .next
+  - dist
+  - build
+  - coverage
+  - test-results
+  - playwright-report
+  - "**/*.json"
+  - "**/*.md"
+
+queries:
+  - uses: security-and-quality

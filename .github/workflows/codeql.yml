@@ -46,15 +46,7 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
           queries: +security-and-quality
-          config: |
-            paths-ignore:
-              - node_modules
-              - .next
-              - dist
-              - build
-              - coverage
-              - test-results
-              - playwright-report
+          config-file: ./.github/codeql-config.yml
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
