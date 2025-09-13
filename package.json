@@ -15,6 +15,7 @@
     "doctor": "node -e \"['eslint','typescript','@playwright/test'].forEach(p=>{try{require.resolve(p);}catch(e){console.error('Missing',p);process.exitCode=1;}})\"",
     "test:e2e": "playwright test",
     "test:e2e:ui": "PWDEBUG=1 playwright test",
+    "test:e2e:prod": "PLAYWRIGHT_PROD=1 playwright test",
     "health": "node -e \"require('http').get('http://localhost:${PORT||3000}', r=>{console.log(r.statusCode===200?'ok':'down');})\"",
     "deps:outdated": "npm outdated",
     "deps:update:minor": "npx npm-check-updates --target minor -u && npm install",
