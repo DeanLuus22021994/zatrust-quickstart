@@ -98,7 +98,7 @@ jobs:
 
       - name: Upload Playwright report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: playwright-report-${{ matrix.node }}-${{ github.run_id }}
           path: playwright-report/
@@ -107,7 +107,7 @@ jobs:
 
       - name: Upload test results
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: test-results-${{ matrix.node }}-${{ github.run_id }}
           path: test-results/
@@ -121,7 +121,7 @@ jobs:
 
       - name: Upload bundle analysis
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: bundle-analysis-${{ matrix.node }}-${{ github.run_id }}
           path: |
@@ -141,7 +141,7 @@ jobs:
 
       - name: Upload security audit
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: security-audit-${{ matrix.node }}-${{ github.run_id }}
           path: security-audit.json
@@ -204,7 +204,7 @@ jobs:
       - name: Outdated summary
         run: npm outdated || true
       - name: Upload lockfile
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: lockfile-nightly
           path: package-lock.json
