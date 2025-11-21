@@ -128,7 +128,7 @@ jobs:
 
       - name: Upload detailed results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: shellcheck-analysis-${{ matrix.sc-version }}-${{ github.run_id }}
           path: shellcheck-results/
