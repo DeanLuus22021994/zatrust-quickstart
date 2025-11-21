@@ -150,7 +150,7 @@ jobs:
 
       - name: Create issue on failure
         if: failure() && github.event_name == 'push'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const ref = process.env.GITHUB_REF;
